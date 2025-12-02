@@ -259,8 +259,24 @@
 }
 
 /* Event type styling */
-.eventItem.event {
+.eventItem.casamiento {
+  border-left: 4px solid #ec4899;
+}
+
+.eventItem.aniversario {
+  border-left: 4px solid #8b5cf6;
+}
+
+.eventItem.bautismo {
+  border-left: 4px solid #06b6d4;
+}
+
+.eventItem.empresarial {
   border-left: 4px solid #3b82f6;
+}
+
+.eventItem.otros {
+  border-left: 4px solid #10b981;
 }
 
 .eventItem.reminder {
@@ -399,8 +415,24 @@
 }
 
 /* Event type styling for upcoming items */
-.upcomingItem.event {
+.upcomingItem.casamiento {
+  border-left: 4px solid #ec4899;
+}
+
+.upcomingItem.aniversario {
+  border-left: 4px solid #8b5cf6;
+}
+
+.upcomingItem.bautismo {
+  border-left: 4px solid #06b6d4;
+}
+
+.upcomingItem.empresarial {
   border-left: 4px solid #3b82f6;
+}
+
+.upcomingItem.otros {
+  border-left: 4px solid #10b981;
 }
 
 .upcomingItem.reminder {
@@ -526,4 +558,147 @@
     min-height: 35px;
     font-size: 0.75rem;
   }
+}
+
+/* Modal de detalles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.detailsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  gap: 16px;
+}
+
+.detailLabel {
+  font-weight: 600;
+  color: #6b7280;
+  min-width: 120px;
+}
+
+.detailValue {
+  color: #1f2937;
+  text-align: right;
+  flex: 1;
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statusBadge.scheduled {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusBadge.confirmed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusBadge.completed {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.statusBadge.cancelled {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.closeButton {
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.closeButton:hover {
+  background: #4b5563;
 }

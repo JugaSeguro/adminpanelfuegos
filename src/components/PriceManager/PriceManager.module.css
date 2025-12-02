@@ -146,23 +146,152 @@
 .categorySection {
   background: white;
   border-radius: 12px;
-  padding: 2rem;
+  padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.categoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  user-select: none;
+}
+
+.categoryHeader:hover {
+  background: #f9fafb;
 }
 
 .categoryTitle {
   font-size: 1.5rem;
   font-weight: 700;
   color: #333;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.productCount {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #667eea;
+}
+
+.categoryToggle {
+  font-size: 1.25rem;
+  color: #667eea;
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+.categoryToggle.expanded {
+  transform: rotate(180deg);
+}
+
+/* Vista de tabla resumen */
+.tableViewSection {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.tableViewTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
   margin: 0 0 1.5rem 0;
-  padding-bottom: 0.75rem;
+  padding-bottom: 1rem;
   border-bottom: 3px solid #667eea;
+}
+
+.summaryTable {
+  overflow-x: auto;
+}
+
+.productsSummaryTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.productsSummaryTable thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.productsSummaryTable th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.productsSummaryTable td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.productsSummaryTable tbody tr:hover {
+  background: #f9fafb;
+}
+
+.categoryCell {
+  background: #f3f4f6;
+  font-weight: 600;
+  color: #667eea;
+  vertical-align: middle;
+}
+
+.productNameCell {
+  font-weight: 600;
+  color: #333;
+}
+
+.portionCell {
+  font-weight: 500;
+  color: #059669;
+  font-family: 'Courier New', monospace;
+}
+
+.clarificationsCell {
+  color: #666;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  max-width: 400px;
+}
+
+.missingData {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 0.875rem;
 }
 
 .productsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
+  padding: 1.5rem 2rem 2rem 2rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 5000px;
+  }
 }
 
 .productCard {
@@ -339,6 +468,85 @@
 .priceInput:disabled {
   background: #f5f5f5;
   cursor: not-allowed;
+}
+
+.portionInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+  background: white;
+  font-weight: 500;
+}
+
+.portionInput:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.portionInput:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.clarificationsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.clarificationsInput {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.clarificationsInput:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.clarificationsInput:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.clarificationsBox {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.clarificationsBox strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #92400e;
+}
+
+.clarificationsBox p {
+  margin: 0;
+  color: #78350f;
+  line-height: 1.5;
+}
+
+.helpText {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+  font-style: italic;
 }
 
 .saveButton {
@@ -773,24 +981,55 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 .ingredientName {
   font-size: 1rem;
   font-weight: 600;
   color: #333;
+  margin-bottom: 0.25rem;
 }
 
-.ingredientPrice {
+.ingredientPriceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 0.875rem;
+}
+
+.ingredientPriceLabel {
   color: #666;
+  font-weight: 500;
+}
+
+.ingredientPriceValue {
+  color: #333;
+  font-weight: 600;
+}
+
+.smallInput {
+  width: 70px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border: 2px solid #e5e5e5;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.smallInput:focus {
+  outline: none;
+  border-color: #667eea;
 }
 
 .ingredientTotal {
   font-size: 0.875rem;
   font-weight: 700;
   color: #667eea;
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e5e5;
 }
 
 .ingredientActions {
@@ -843,8 +1082,14 @@
   border-top: 2px solid #e5e5e5;
 }
 
+.addIngredientRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 .ingredientSelect {
-  width: 100%;
+  flex: 1;
   padding: 0.75rem;
   font-size: 1rem;
   border: 2px solid #e5e5e5;
@@ -862,5 +1107,35 @@
 .ingredientSelect:disabled {
   background: #f5f5f5;
   cursor: not-allowed;
+}
+
+.addIngredientBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.addIngredientBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.addIngredientBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 

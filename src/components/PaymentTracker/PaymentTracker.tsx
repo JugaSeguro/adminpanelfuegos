@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { CateringOrder, PaymentRecord, PaymentInfo } from '@/types'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -15,6 +15,7 @@ interface PaymentTrackerProps {
 interface PaymentFormData {
   amount: number
   method: 'cash' | 'card' | 'transfer' | 'check'
+  paymentType: 'blanco' | 'negro'
   reference: string
   notes: string
 }
@@ -25,6 +26,7 @@ export default function PaymentTracker({ orders, onUpdatePayment }: PaymentTrack
   const [formData, setFormData] = useState<PaymentFormData>({
     amount: 0,
     method: 'card',
+    paymentType: 'blanco',
     reference: '',
     notes: ''
   })
@@ -34,40 +36,45 @@ export default function PaymentTracker({ orders, onUpdatePayment }: PaymentTrack
     setIsMounted(true)
   }, [])
 
-  // Calcular estadísticas de pagos
-  const paymentStats = orders.reduce((stats, order) => {
-    if (!order.payment || !order.estimatedPrice) return stats
+  // Calcular estadísticas de pagos (memoizado para evitar recálculos innecesarios)
+  const paymentStats = useMemo(() => {
+    return orders.reduce((stats, order) => {
+      if (!order.payment || !order.estimatedPrice) return stats
 
-    const payment = order.payment
-    
-    if (payment.paymentStatus === 'pending') {
-      stats.pending.amount += payment.pendingAmount
-      stats.pending.count++
-    } else if (payment.paymentStatus === 'partial') {
-      stats.partial.amount += payment.pendingAmount
-      stats.partial.count++
-    } else if (payment.paymentStatus === 'completed') {
-      stats.completed.amount += payment.totalAmount
-      stats.completed.count++
-    }
+      const payment = order.payment
+      
+      if (payment.paymentStatus === 'pending') {
+        stats.pending.amount += payment.pendingAmount
+        stats.pending.count++
+      } else if (payment.paymentStatus === 'partial') {
+        stats.partial.amount += payment.pendingAmount
+        stats.partial.count++
+      } else if (payment.paymentStatus === 'completed') {
+        stats.completed.amount += payment.totalAmount
+        stats.completed.count++
+      }
 
-    return stats
-  }, {
-    pending: { amount: 0, count: 0 },
-    partial: { amount: 0, count: 0 },
-    completed: { amount: 0, count: 0 }
-  })
+      return stats
+    }, {
+      pending: { amount: 0, count: 0 },
+      partial: { amount: 0, count: 0 },
+      completed: { amount: 0, count: 0 }
+    })
+  }, [orders])
 
-  // Filtrar órdenes que necesitan seguimiento de pagos
-  const ordersWithPayments = orders.filter(order => 
-    order.estimatedPrice && order.status === 'approved'
-  )
+  // Filtrar órdenes que necesitan seguimiento de pagos (memoizado)
+  const ordersWithPayments = useMemo(() => {
+    return orders.filter(order => 
+      order.estimatedPrice && order.status === 'approved'
+    )
+  }, [orders])
 
   const handleAddPayment = (order: CateringOrder) => {
     setSelectedOrder(order)
     setFormData({
       amount: order.payment?.pendingAmount || order.estimatedPrice || 0,
       method: 'card',
+      paymentType: 'blanco',
       reference: '',
       notes: ''
     })
@@ -82,6 +89,7 @@ export default function PaymentTracker({ orders, onUpdatePayment }: PaymentTrack
       amount: formData.amount,
       date: new Date().toISOString(),
       method: formData.method,
+      paymentType: formData.paymentType,
       reference: formData.reference,
       notes: formData.notes
     }
@@ -291,6 +299,19 @@ export default function PaymentTracker({ orders, onUpdatePayment }: PaymentTrack
                 <option value="cash">Efectivo</option>
                 <option value="transfer">Transferencia</option>
                 <option value="check">Cheque</option>
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Tipo de Pago *</label>
+              <select
+                className={styles.select}
+                value={formData.paymentType}
+                onChange={(e) => setFormData({ ...formData, paymentType: e.target.value as any })}
+                required
+              >
+                <option value="blanco">Blanco</option>
+                <option value="negro">Negro</option>
               </select>
             </div>
 

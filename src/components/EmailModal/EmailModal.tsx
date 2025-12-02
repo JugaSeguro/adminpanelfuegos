@@ -11,19 +11,21 @@ interface EmailModalProps {
 }
 
 export default function EmailModal({ order, isOpen, onClose, onSend }: EmailModalProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  // Por defecto, usar la plantilla de relance (id: '5')
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('5')
   const [subject, setSubject] = useState<string>('')
   const [content, setContent] = useState<string>('')
 
+  // Cargar plantilla cuando se abre el modal o cambia la plantilla seleccionada
   useEffect(() => {
-    if (selectedTemplate) {
+    if (isOpen && selectedTemplate) {
       const template = emailTemplates.find(t => t.id === selectedTemplate)
       if (template) {
         setSubject(template.subject)
         setContent(template.content)
       }
     }
-  }, [selectedTemplate])
+  }, [isOpen, selectedTemplate])
 
   const replaceVariables = (text: string): string => {
     return text
@@ -40,19 +42,25 @@ export default function EmailModal({ order, isOpen, onClose, onSend }: EmailModa
     if (subject.trim() && content.trim()) {
       onSend(order.id, subject, content)
       onClose()
-      // Reset form
-      setSelectedTemplate('')
-      setSubject('')
-      setContent('')
+      // Reset form a la plantilla de relance por defecto
+      setSelectedTemplate('5')
+      const relanceTemplate = emailTemplates.find(t => t.id === '5')
+      if (relanceTemplate) {
+        setSubject(relanceTemplate.subject)
+        setContent(relanceTemplate.content)
+      }
     }
   }
 
   const handleClose = () => {
     onClose()
-    // Reset form
-    setSelectedTemplate('')
-    setSubject('')
-    setContent('')
+    // Reset form a la plantilla de relance por defecto
+    setSelectedTemplate('5')
+    const relanceTemplate = emailTemplates.find(t => t.id === '5')
+    if (relanceTemplate) {
+      setSubject(relanceTemplate.subject)
+      setContent(relanceTemplate.content)
+    }
   }
 
   if (!isOpen) return null
@@ -75,7 +83,6 @@ export default function EmailModal({ order, isOpen, onClose, onSend }: EmailModa
               onChange={(e) => setSelectedTemplate(e.target.value)}
               className={styles.select}
             >
-              <option value="">Seleccionar plantilla...</option>
               {emailTemplates.map((template) => (
                 <option key={template.id} value={template.id}>
                   {template.name}

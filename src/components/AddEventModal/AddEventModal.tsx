@@ -21,7 +21,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
     title: '',
     date: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
     time: '',
-    type: 'Event' as 'Event' | 'Reminder' | 'Payment Due',
+    type: 'Casamiento' as 'Casamiento' | 'Aniversario' | 'Bautismo' | 'Empresarial' | 'Otros',
     status: 'Pending' as 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled',
     clientName: '',
     location: '',
@@ -81,7 +81,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
       title: '',
       date: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
       time: '',
-      type: 'Event',
+      type: 'Casamiento',
       status: 'Pending',
       clientName: '',
       location: '',
@@ -170,16 +170,18 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label htmlFor="type">Tipo</label>
+              <label htmlFor="type">Tipo Evento</label>
               <select
                 id="type"
                 name="type"
                 value={formData.type}
                 onChange={handleInputChange}
               >
-                <option value="Event">Evento</option>
-                <option value="Reminder">Recordatorio</option>
-                <option value="Payment Due">Pago Pendiente</option>
+                <option value="Casamiento">Casamiento</option>
+                <option value="Aniversario">Aniversario</option>
+                <option value="Bautismo">Bautismo</option>
+                <option value="Empresarial">Empresarial</option>
+                <option value="Otros">Otros</option>
               </select>
             </div>
 

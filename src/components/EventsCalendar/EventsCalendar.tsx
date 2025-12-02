@@ -22,6 +22,8 @@ export default function EventsCalendar({ orders, manualEvents = [], onAddEvent }
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [viewMode, setViewMode] = useState<ViewMode>('calendar')
   const [addEventModal, setAddEventModal] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
 
   // Convertir órdenes a eventos de calendario
   const orderEvents = useMemo((): CalendarEvent[] => {
@@ -34,13 +36,21 @@ export default function EventsCalendar({ orders, manualEvents = [], onAddEvent }
         else if (order.status === 'rejected') eventStatus = 'Cancelled'
         else if (order.status === 'sent') eventStatus = 'Pending'
         
+        // Mapear el tipo de evento del formulario al tipo del calendario
+        let eventType: CalendarEvent['type'] = 'Otros'
+        if (order.contact.eventType === 'mariage') eventType = 'Casamiento'
+        else if (order.contact.eventType === 'anniversaire') eventType = 'Aniversario'
+        else if (order.contact.eventType === 'bapteme') eventType = 'Bautismo'
+        else if (order.contact.eventType === 'corporatif') eventType = 'Empresarial'
+        else if (order.contact.eventType === 'autre') eventType = 'Otros'
+        
         return {
           id: `event-${order.id}`,
           orderId: order.id,
-          title: `${order.contact.eventType} - ${order.contact.name}`,
+          title: `${eventType} - ${order.contact.name}`,
           date: order.contact.eventDate,
           time: order.contact.eventTime || '12:00',
-          type: 'Event' as const,
+          type: eventType,
           status: eventStatus,
           clientName: order.contact.name,
           location: order.contact.address,
@@ -126,18 +136,26 @@ export default function EventsCalendar({ orders, manualEvents = [], onAddEvent }
 
   const getEventTypeColor = (type: string) => {
     switch (type) {
-      case 'Event': return 'event'
-      case 'Reminder': return 'reminder'
-      case 'Payment Due': return 'paymentDue'
-      default: return 'event'
+      case 'Casamiento': return 'casamiento'
+      case 'Aniversario': return 'aniversario'
+      case 'Bautismo': return 'bautismo'
+      case 'Empresarial': return 'empresarial'
+      case 'Otros': return 'otros'
+      case 'Recordatorio': return 'reminder'
+      case 'Pago Pendiente': return 'paymentDue'
+      default: return 'otros'
     }
   }
 
   const getEventIcon = (type: string) => {
     switch (type) {
-      case 'Event': return '🎉'
-      case 'Reminder': return '⏰'
-      case 'Payment Due': return '💰'
+      case 'Casamiento': return '💍'
+      case 'Aniversario': return '🎂'
+      case 'Bautismo': return '👼'
+      case 'Empresarial': return '💼'
+      case 'Otros': return '🎉'
+      case 'Recordatorio': return '⏰'
+      case 'Pago Pendiente': return '💰'
       default: return '📅'
     }
   }
@@ -168,6 +186,11 @@ export default function EventsCalendar({ orders, manualEvents = [], onAddEvent }
     if (daysUntil === 1) return 'Mañana'
     if (daysUntil <= 3) return `${daysUntil} días`
     return format(addDays(new Date(), daysUntil), 'dd/MM', { locale: es })
+  }
+
+  const handleViewDetails = (event: CalendarEvent) => {
+    setSelectedEvent(event)
+    setShowDetailsModal(true)
   }
 
   return (
@@ -263,7 +286,7 @@ export default function EventsCalendar({ orders, manualEvents = [], onAddEvent }
                     </div>
 
                     <div className={styles.eventActions}>
-                      <button className={styles.actionBtn}>
+                      <button className={styles.actionBtn} onClick={() => handleViewDetails(event)}>
                         <Eye size={12} />
                         Ver Detalles
                       </button>
@@ -328,7 +351,7 @@ export default function EventsCalendar({ orders, manualEvents = [], onAddEvent }
                   )}
                   
                   <div className={styles.eventActions}>
-                    <button className={styles.actionBtn}>
+                    <button className={styles.actionBtn} onClick={() => handleViewDetails(event)}>
                       <Eye size={12} />
                       Ver Detalles
                     </button>
@@ -353,6 +376,96 @@ export default function EventsCalendar({ orders, manualEvents = [], onAddEvent }
           onSave={handleAddEvent}
           selectedDate={selectedDate}
         />
+      )}
+
+      {/* Modal para ver detalles del evento */}
+      {showDetailsModal && selectedEvent && (
+        <div className={styles.modal} onClick={() => setShowDetailsModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>
+                <span className={styles.eventIcon}>{getEventIcon(selectedEvent.type)}</span>
+                Detalles del Evento
+              </h3>
+              <button
+                className={styles.closeBtn}
+                onClick={() => setShowDetailsModal(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.detailsContent}>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Título:</span>
+                <span className={styles.detailValue}>{selectedEvent.title}</span>
+              </div>
+
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Fecha:</span>
+                <span className={styles.detailValue}>
+                  {format(new Date(selectedEvent.date), 'dd/MM/yyyy', { locale: es })}
+                </span>
+              </div>
+
+              {selectedEvent.time && (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Hora:</span>
+                  <span className={styles.detailValue}>{selectedEvent.time}</span>
+                </div>
+              )}
+
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Tipo:</span>
+                <span className={styles.detailValue}>{selectedEvent.type}</span>
+              </div>
+
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Estado:</span>
+                <span className={`${styles.statusBadge} ${styles[getStatusColor(selectedEvent.status)]}`}>
+                  {selectedEvent.status === 'Confirmed' ? 'Confirmado' : 
+                   selectedEvent.status === 'Pending' ? 'Pendiente' :
+                   selectedEvent.status === 'Completed' ? 'Completado' : 'Cancelado'}
+                </span>
+              </div>
+
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Cliente:</span>
+                <span className={styles.detailValue}>{selectedEvent.clientName}</span>
+              </div>
+
+              {selectedEvent.location && (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Ubicación:</span>
+                  <span className={styles.detailValue}>{selectedEvent.location}</span>
+                </div>
+              )}
+
+              {selectedEvent.notes && (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Notas:</span>
+                  <span className={styles.detailValue}>{selectedEvent.notes}</span>
+                </div>
+              )}
+
+              {selectedEvent.orderId && (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>ID de Pedido:</span>
+                  <span className={styles.detailValue}>{selectedEvent.orderId}</span>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.modalActions}>
+              <button
+                className={styles.closeButton}
+                onClick={() => setShowDetailsModal(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

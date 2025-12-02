@@ -12,17 +12,19 @@ import EventsCalendar from '@/components/EventsCalendar/EventsCalendar'
 import EventReminders from '@/components/EventReminders/EventReminders'
 import PriceManager from '@/components/PriceManager/PriceManager'
 import BudgetsManager from '@/components/BudgetsManager/BudgetsManager'
-import { CateringOrder, FilterOptions, EmailTemplate, CalendarEvent, PaymentInfo } from '@/types'
+import EventCalculator from '@/components/EventCalculator/EventCalculator'
+import { CateringOrder, FilterOptions, EmailTemplate, CalendarEvent, PaymentInfo, Product } from '@/types'
 import { emailTemplates } from '@/data/mockData'
 import { supabase } from '@/lib/supabaseClient'
-import { List, DollarSign, BarChart3, Calendar, Bell, Euro, FileText } from 'lucide-react'
+import { List, DollarSign, BarChart3, Calendar, Bell, Euro, FileText, Calculator } from 'lucide-react'
 import styles from './page.module.css'
 
-type TabType = 'orders' | 'payments' | 'reports' | 'calendar' | 'reminders' | 'prices' | 'budgets'
+type TabType = 'orders' | 'payments' | 'reports' | 'calendar' | 'reminders' | 'prices' | 'budgets' | 'eventcalc'
 
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState<TabType>('orders')
   const [orders, setOrders] = useState<CateringOrder[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [manualEvents, setManualEvents] = useState<CalendarEvent[]>([])
   const [filters, setFilters] = useState<FilterOptions>({
     searchTerm: '',
@@ -54,34 +56,57 @@ export default function AdminPanel() {
         return
       }
 
-      const mapped: CateringOrder[] = (data || []).map((row: any) => ({
-        id: row.id,
-        contact: {
-          email: row.email,
-          name: row.name,
-          phone: row.phone || '',
-          eventDate: row.event_date || '',
-          eventType: row.event_type || '',
-          eventTime: row.event_time || undefined,
-          address: row.address || '',
-          guestCount: row.guest_count || 0
-        },
-        menu: { type: row.menu_type },
-        entrees: row.entrees || [],
-        viandes: row.viandes || [],
-        dessert: row.dessert || null,
-        extras: row.extras || { wines: false, equipment: [], decoration: false, specialRequest: '' },
-        status: row.status || 'pending',
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        estimatedPrice: row.estimated_price || undefined,
-        notes: row.notes || undefined
-      }))
+      const mapped: CateringOrder[] = (data || []).map((row: any) => {
+        console.log('📦 Cargando pedido:', { id: row.id, status: row.status, name: row.name })
+        return {
+          id: row.id,
+          contact: {
+            email: row.email,
+            name: row.name,
+            phone: row.phone || '',
+            eventDate: row.event_date || '',
+            eventType: row.event_type || '',
+            eventTime: row.event_time || undefined,
+            address: row.address || '',
+            guestCount: row.guest_count || 0
+          },
+          menu: { type: row.menu_type },
+          entrees: row.entrees || [],
+          viandes: row.viandes || [],
+          dessert: row.dessert || null,
+          extras: row.extras || { wines: false, equipment: [], decoration: false, specialRequest: '' },
+          status: row.status || 'pending',
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          estimatedPrice: row.estimated_price || undefined,
+          notes: row.notes || undefined
+        }
+      })
 
       setOrders(mapped)
     }
 
     loadOrders()
+  }, [])
+
+  // Cargar productos desde Supabase
+  useEffect(() => {
+    const loadProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('category', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (error) {
+        console.error('Error cargando productos:', error)
+        return
+      }
+
+      setProducts(data || [])
+    }
+
+    loadProducts()
   }, [])
 
   // Filtrar pedidos basado en los filtros aplicados
@@ -120,14 +145,53 @@ export default function AdminPanel() {
   }, [orders, filters])
 
   // Manejar cambio de estado de pedido
-  const handleStatusChange = (orderId: string, newStatus: CateringOrder['status']) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId
-          ? { ...order, status: newStatus, updatedAt: new Date().toISOString() }
-          : order
+  const handleStatusChange = async (orderId: string, newStatus: CateringOrder['status']) => {
+    try {
+      console.log('🔄 Cambiando estado del pedido:', { orderId, newStatus })
+      
+      // Actualizar en la base de datos
+      const { data, error } = await supabase
+        .from('catering_orders')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .select()
+
+      if (error) {
+        console.error('❌ Error actualizando estado del pedido:', error)
+        alert(`Error al actualizar el estado del pedido: ${error.message}`)
+        return
+      }
+
+      console.log('✅ Estado actualizado en BD:', data)
+
+      // Verificar que el valor se guardó correctamente
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('catering_orders')
+        .select('id, status, updated_at')
+        .eq('id', orderId)
+        .single()
+
+      if (verifyError) {
+        console.error('❌ Error verificando estado:', verifyError)
+      } else {
+        console.log('✅ Estado verificado en BD:', verifyData)
+      }
+
+      // Actualizar el estado local solo si la actualización en BD fue exitosa
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId
+            ? { ...order, status: newStatus, updatedAt: new Date().toISOString() }
+            : order
+        )
       )
-    )
+    } catch (error) {
+      console.error('❌ Error al actualizar estado del pedido:', error)
+      alert(`Error al actualizar el estado del pedido: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+    }
   }
 
   // Actualizar información de pago de un pedido
@@ -275,7 +339,8 @@ export default function AdminPanel() {
     { id: 'calendar' as TabType, label: 'Calendario', icon: Calendar },
     { id: 'reminders' as TabType, label: 'Recordatorios', icon: Bell },
     { id: 'prices' as TabType, label: 'Precios', icon: Euro },
-    { id: 'budgets' as TabType, label: 'Presupuestos', icon: FileText }
+    { id: 'budgets' as TabType, label: 'Presupuestos', icon: FileText },
+    { id: 'eventcalc' as TabType, label: 'Calculadora', icon: Calculator }
   ]
 
   const renderTabContent = () => {
@@ -357,6 +422,8 @@ export default function AdminPanel() {
         return <PriceManager />
       case 'budgets':
         return <BudgetsManager />
+      case 'eventcalc':
+        return <EventCalculator products={products} orders={orders} />
       default:
         return null
     }

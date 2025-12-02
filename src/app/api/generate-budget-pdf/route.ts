@@ -54,13 +54,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Obtener URL pública
+    // Obtener URL pública con timestamp para evitar cache
     const { data: urlData } = supabase
       .storage
       .from('budgets')
       .getPublicUrl(uploadData.path)
 
-    const pdfUrl = urlData.publicUrl
+    // Agregar timestamp para forzar regeneración y evitar cache del navegador
+    const timestamp = Date.now()
+    const pdfUrl = `${urlData.publicUrl}?t=${timestamp}`
 
     // Actualizar registro
     const { error: updateError } = await supabase

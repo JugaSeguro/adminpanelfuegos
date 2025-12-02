@@ -68,6 +68,7 @@ export default function OrderCard({
             <h3>{order.contact.name}</h3>
             <p className={styles.email}>{order.contact.email}</p>
             <p className={styles.phone}>{order.contact.phone}</p>
+            <p className={styles.eventDate}>📅 {formatDate(order.contact.eventDate)}</p>
           </div>
           <div className={styles.compactRight}>
             <span className={`${styles.status} ${styles[order.status]}`}>
@@ -147,6 +148,21 @@ export default function OrderCard({
                 </ul>
               </div>
             )}
+
+            {/* Extras */}
+            {(order.extras.wines || order.extras.equipment.length > 0 || order.extras.decoration || order.extras.specialRequest) && (
+              <div className={styles.menuSection}>
+                <h4>Extras</h4>
+                <ul>
+                  {order.extras.wines && <li>🍷 Vinos incluidos</li>}
+                  {order.extras.decoration && <li>🎨 Decoración incluida</li>}
+                  {order.extras.equipment.length > 0 && order.extras.equipment.map((equip, index) => (
+                    <li key={index}>🔧 {equip}</li>
+                  ))}
+                  {order.extras.specialRequest && <li>📝 {order.extras.specialRequest}</li>}
+                </ul>
+              </div>
+            )}
           </div>
 
           {order.notes && (
@@ -156,32 +172,61 @@ export default function OrderCard({
           )}
 
           <div className={styles.actions}>
-            <select
-              value={order.status}
-              onChange={(e) => onStatusChange(order.id, e.target.value as CateringOrder['status'])}
-              className={`${styles.actionButton} ${styles.statusButton}`}
-            >
-              <option value="pending">Pendiente</option>
-              <option value="sent">Enviado</option>
-              <option value="approved">Aprobado</option>
-              <option value="rejected">Rechazado</option>
-            </select>
-            
-            <button
-              onClick={() => onSendEmail(order)}
-              className={`${styles.actionButton} ${styles.emailButton}`}
-            >
-              <Mail size={16} />
-              Enviar Email
-            </button>
-            
-            <button
-              onClick={() => onViewDetails(order)}
-              className={`${styles.actionButton} ${styles.viewButton}`}
-            >
-              <Eye size={16} />
-              Ver Detalles
-            </button>
+            {/* Sección de Estado - Botones en lugar de dropdown */}
+            <div className={styles.statusSection}>
+              <label className={styles.statusLabel}>Estado:</label>
+              <div className={styles.statusButtons}>
+                <button
+                  onClick={() => onStatusChange(order.id, 'pending')}
+                  className={`${styles.statusBtn} ${order.status === 'pending' ? `${styles.statusBtnActive} ${styles.pending}` : ''}`}
+                  title="Marcar como Pendiente"
+                >
+                  Pendiente
+                </button>
+                <button
+                  onClick={() => onStatusChange(order.id, 'sent')}
+                  className={`${styles.statusBtn} ${order.status === 'sent' ? `${styles.statusBtnActive} ${styles.sent}` : ''}`}
+                  title="Marcar como Enviado"
+                >
+                  Enviado
+                </button>
+                <button
+                  onClick={() => onStatusChange(order.id, 'approved')}
+                  className={`${styles.statusBtn} ${order.status === 'approved' ? `${styles.statusBtnActive} ${styles.approved}` : ''}`}
+                  title="Marcar como Aprobado"
+                >
+                  Aprobado
+                </button>
+                <button
+                  onClick={() => onStatusChange(order.id, 'rejected')}
+                  className={`${styles.statusBtn} ${order.status === 'rejected' ? `${styles.statusBtnActive} ${styles.rejected}` : ''}`}
+                  title="Marcar como Rechazado"
+                >
+                  Rechazado
+                </button>
+              </div>
+            </div>
+
+            {/* Sección de Acciones */}
+            <div className={styles.actionButtons}>
+              <button
+                onClick={() => onSendEmail(order)}
+                className={`${styles.actionButton} ${styles.emailButton}`}
+                title="Enviar email de relance"
+              >
+                <Mail size={16} />
+                Relanzar Devis
+              </button>
+              
+              <button
+                onClick={() => onViewDetails(order)}
+                className={`${styles.actionButton} ${styles.viewButton}`}
+                title="Ver detalles completos"
+              >
+                <Eye size={16} />
+                Ver Detalles
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -10,7 +10,7 @@ const CATEGORIES = [
   { id: 'entradas', name: 'entradas', displayName: 'Entradas' },
   { id: 'carnes_clasicas', name: 'carnes_clasicas', displayName: 'Carnes Clásicas' },
   { id: 'carnes_premium', name: 'carnes_premium', displayName: 'Carnes Premium' },
-  { id: 'verduras', name: 'verduras', displayName: 'Verduras' },
+  { id: 'verduras', name: 'verduras', displayName: 'Acompañamiento' },
   { id: 'postres', name: 'postres', displayName: 'Postres' },
   { id: 'pan', name: 'pan', displayName: 'Pan' },
   { id: 'extras', name: 'extras', displayName: 'Extras' }
@@ -28,6 +28,7 @@ export default function PriceManager() {
   const [selectedCombo, setSelectedCombo] = useState<Product | null>(null)
   const [comboIngredients, setComboIngredients] = useState<ComboIngredient[]>([])
   const [availableIngredients, setAvailableIngredients] = useState<Product[]>([])
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['entradas']))
   const [newProduct, setNewProduct] = useState({
     name: '',
     category: 'entradas' as Product['category'],
@@ -36,6 +37,8 @@ export default function PriceManager() {
     unit_type: 'porcion' as Product['unit_type'],
     is_combo: false,
     notes: '',
+    portion_per_person: '',
+    clarifications: '',
     active: true
   })
 
@@ -111,6 +114,8 @@ export default function PriceManager() {
           unit_type: product.unit_type,
           is_combo: product.is_combo,
           notes: product.notes,
+          portion_per_person: product.portion_per_person || null,
+          clarifications: product.clarifications || null,
           active: product.active,
           updated_at: new Date().toISOString()
         })
@@ -163,6 +168,8 @@ export default function PriceManager() {
             unit_type: product.unit_type,
             is_combo: product.is_combo,
             notes: product.notes,
+            portion_per_person: product.portion_per_person || null,
+            clarifications: product.clarifications || null,
             active: product.active,
             updated_at: new Date().toISOString()
           })
@@ -193,11 +200,20 @@ export default function PriceManager() {
     return products.filter(p => p.category === categoryId)
   }
 
-  const handleOpenIngredientsModal = async (combo: Product) => {
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId)
+      } else {
+        newSet.add(categoryId)
+      }
+      return newSet
+    })
+  }
+
+  const loadComboIngredients = async (comboId: string) => {
     try {
-      setSelectedCombo(combo)
-      setSaving('loading-ingredients')
-      
       // Cargar ingredientes del combo
       const { data: ingredients, error } = await supabase
         .from('combo_ingredients')
@@ -208,7 +224,7 @@ export default function PriceManager() {
           quantity,
           created_at
         `)
-        .eq('combo_id', combo.id)
+        .eq('combo_id', comboId)
 
       if (error) throw error
 
@@ -232,6 +248,17 @@ export default function PriceManager() {
       } else {
         setComboIngredients([])
       }
+    } catch (err) {
+      console.error('Error loading combo ingredients:', err)
+    }
+  }
+
+  const handleOpenIngredientsModal = async (combo: Product) => {
+    try {
+      setSelectedCombo(combo)
+      setSaving('loading-ingredients')
+      
+      await loadComboIngredients(combo.id)
 
       // Cargar productos disponibles para agregar (que no sean combos)
       setAvailableIngredients(products.filter(p => !p.is_combo && p.id !== combo.id))
@@ -246,7 +273,7 @@ export default function PriceManager() {
   }
 
   const handleAddIngredient = async (ingredientId: string) => {
-    if (!selectedCombo) return
+    if (!selectedCombo || !ingredientId) return
 
     try {
       setSaving('adding-ingredient')
@@ -270,11 +297,14 @@ export default function PriceManager() {
       const ingredient = products.find(p => p.id === ingredientId)
       
       setComboIngredients(prev => [...prev, { ...data, ingredient }])
-      setSuccessMessage('Ingrediente agregado al combo')
+      setSuccessMessage('Ingrediente agregado correctamente')
       setTimeout(() => setSuccessMessage(null), 3000)
 
       // Recalcular precio del combo
       await recalculateComboPrice(selectedCombo.id)
+      
+      // Recargar los datos del combo actualizado
+      await loadComboIngredients(selectedCombo.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al agregar ingrediente')
       console.error('Error adding ingredient:', err)
@@ -410,6 +440,8 @@ export default function PriceManager() {
             unit_type: newProduct.unit_type,
             is_combo: newProduct.is_combo,
             notes: newProduct.notes || null,
+            portion_per_person: newProduct.portion_per_person || null,
+            clarifications: newProduct.clarifications || null,
             active: newProduct.active
           }
         ])
@@ -432,6 +464,8 @@ export default function PriceManager() {
         unit_type: 'porcion',
         is_combo: false,
         notes: '',
+        portion_per_person: '',
+        clarifications: '',
         active: true
       })
       
@@ -516,17 +550,72 @@ export default function PriceManager() {
         </div>
       )}
 
+      {/* Vista de tabla con porciones y aclaraciones */}
+      <div className={styles.tableViewSection}>
+        <h3 className={styles.tableViewTitle}>📊 Resumen: Porciones por Persona y Aclaraciones</h3>
+        <div className={styles.summaryTable}>
+          <table className={styles.productsSummaryTable}>
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                <th>Ingrediente</th>
+                <th>Porción x Persona</th>
+                <th>Aclaraciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CATEGORIES.map(category => {
+                const categoryProducts = getProductsByCategory(category.name)
+                return categoryProducts.map((product, index) => (
+                  <tr key={product.id}>
+                    {index === 0 && (
+                      <td rowSpan={categoryProducts.length} className={styles.categoryCell}>
+                        <strong>{category.displayName}</strong>
+                      </td>
+                    )}
+                    <td className={styles.productNameCell}>{product.name}</td>
+                    <td className={styles.portionCell}>
+                      {product.portion_per_person || (
+                        <span className={styles.missingData}>No definido</span>
+                      )}
+                    </td>
+                    <td className={styles.clarificationsCell}>
+                      {product.clarifications || (
+                        <span className={styles.missingData}>-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div className={styles.categoriesContainer}>
         {CATEGORIES.map(category => {
           const categoryProducts = getProductsByCategory(category.name)
+          const isExpanded = expandedCategories.has(category.id)
           
           if (categoryProducts.length === 0) return null
 
           return (
             <div key={category.id} className={styles.categorySection}>
-              <h3 className={styles.categoryTitle}>{category.displayName}</h3>
+              <div 
+                className={styles.categoryHeader}
+                onClick={() => toggleCategory(category.id)}
+              >
+                <h3 className={styles.categoryTitle}>
+                  {category.displayName}
+                  <span className={styles.productCount}>({categoryProducts.length})</span>
+                </h3>
+                <span className={`${styles.categoryToggle} ${isExpanded ? styles.expanded : ''}`}>
+                  ▼
+                </span>
+              </div>
               
-              <div className={styles.productsGrid}>
+              {isExpanded && (
+                <div className={styles.productsGrid}>
                 {categoryProducts.map(product => {
                   const isEdited = editedProducts.has(product.id)
                   const isSaving = saving === product.id
@@ -597,6 +686,48 @@ export default function PriceManager() {
                               />
                             </div>
                           </div>
+
+                          <div className={styles.priceInputGroup}>
+                            <label className={styles.priceLabel}>Porción x Persona</label>
+                            <input
+                              type="text"
+                              value={product.portion_per_person || ''}
+                              onChange={(e) => {
+                                setProducts(prevProducts =>
+                                  prevProducts.map(p =>
+                                    p.id === product.id
+                                      ? { ...p, portion_per_person: e.target.value }
+                                      : p
+                                  )
+                                )
+                                setEditedProducts(prev => new Set(prev).add(product.id))
+                              }}
+                              className={styles.portionInput}
+                              disabled={isSaving}
+                              placeholder="Ej: 1/4, 1/2, 30 gr, 1 feta"
+                            />
+                          </div>
+                        </div>
+
+                        <div className={styles.clarificationsSection}>
+                          <label className={styles.priceLabel}>Aclaraciones</label>
+                          <textarea
+                            value={product.clarifications || ''}
+                            onChange={(e) => {
+                              setProducts(prevProducts =>
+                                prevProducts.map(p =>
+                                  p.id === product.id
+                                    ? { ...p, clarifications: e.target.value }
+                                    : p
+                                )
+                              )
+                              setEditedProducts(prev => new Set(prev).add(product.id))
+                            }}
+                            className={styles.clarificationsInput}
+                            disabled={isSaving}
+                            placeholder="Ej: Con 1 chorizo hago 4 choripanes..."
+                            rows={2}
+                          />
                         </div>
 
                         {product.is_combo ? (
@@ -636,7 +767,8 @@ export default function PriceManager() {
                     </div>
                   )
                 })}
-              </div>
+                </div>
+              )}
             </div>
           )
         })}
@@ -741,6 +873,36 @@ export default function PriceManager() {
                   placeholder="Dejar vacío si no aplica"
                   disabled={saving === 'adding'}
                 />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Porción por Persona</label>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={newProduct.portion_per_person}
+                  onChange={(e) => setNewProduct({ ...newProduct, portion_per_person: e.target.value })}
+                  placeholder="Ej: 1/4, 1/2, 30 gr, 1 feta, 1 bolsa cada 30 personas..."
+                  disabled={saving === 'adding'}
+                />
+                <small className={styles.helpText}>
+                  Cantidad necesaria por invitado (ej: 1/4, 1/2, 30 gr, 1 feta)
+                </small>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Aclaraciones</label>
+                <textarea
+                  className={styles.textarea}
+                  value={newProduct.clarifications}
+                  onChange={(e) => setNewProduct({ ...newProduct, clarifications: e.target.value })}
+                  placeholder="Ej: Con 1 chorizo hago 4 choripanes, Paquete trae 56 fetas..."
+                  rows={3}
+                  disabled={saving === 'adding'}
+                />
+                <small className={styles.helpText}>
+                  Información importante para el cálculo (ej: rendimiento, cantidad por paquete, etc.)
+                </small>
               </div>
 
               <div className={styles.formGroup}>
@@ -850,24 +1012,30 @@ export default function PriceManager() {
                           <div className={styles.ingredientName}>
                             {ing.ingredient?.name || 'Desconocido'}
                           </div>
-                          <div className={styles.ingredientPrice}>
-                            €{ing.ingredient?.price_per_portion.toFixed(2)} × {ing.quantity}
+                          <div className={styles.ingredientPriceRow}>
+                            <label className={styles.ingredientPriceLabel}>Cantidad:</label>
+                            <input
+                              type="number"
+                              min="0.1"
+                              step="0.1"
+                              value={ing.quantity}
+                              onChange={(e) => handleUpdateQuantity(ing.id, parseFloat(e.target.value) || 1)}
+                              className={styles.smallInput}
+                              disabled={saving !== null}
+                            />
+                          </div>
+                          <div className={styles.ingredientPriceRow}>
+                            <label className={styles.ingredientPriceLabel}>Precio unit:</label>
+                            <span className={styles.ingredientPriceValue}>
+                              €{ing.ingredient?.price_per_portion.toFixed(2)}
+                            </span>
                           </div>
                           <div className={styles.ingredientTotal}>
-                            = €{((ing.ingredient?.price_per_portion || 0) * ing.quantity).toFixed(2)}
+                            Total: €{((ing.ingredient?.price_per_portion || 0) * ing.quantity).toFixed(2)}
                           </div>
                         </div>
                         
                         <div className={styles.ingredientActions}>
-                          <input
-                            type="number"
-                            min="0.1"
-                            step="0.1"
-                            value={ing.quantity}
-                            onChange={(e) => handleUpdateQuantity(ing.id, parseFloat(e.target.value) || 1)}
-                            className={styles.quantityInput}
-                            disabled={saving !== null}
-                          />
                           <button
                             className={styles.removeIngredientButton}
                             onClick={() => handleRemoveIngredient(ing.id)}
@@ -885,25 +1053,41 @@ export default function PriceManager() {
 
               <div className={styles.addIngredientSection}>
                 <h4 className={styles.ingredientsListTitle}>Agregar ingrediente:</h4>
-                <select
-                  className={styles.ingredientSelect}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      handleAddIngredient(e.target.value)
-                      e.target.value = ''
-                    }
-                  }}
-                  disabled={saving !== null}
-                >
-                  <option value="">Seleccionar ingrediente...</option>
-                  {availableIngredients
-                    .filter(p => !comboIngredients.some(ci => ci.ingredient_id === p.id))
-                    .map(product => (
-                      <option key={product.id} value={product.id}>
-                        {product.name} - €{product.price_per_portion.toFixed(2)}
-                      </option>
-                    ))}
-                </select>
+                <div className={styles.addIngredientRow}>
+                  <select
+                    id="ingredientSelect"
+                    className={styles.ingredientSelect}
+                    disabled={saving !== null}
+                    defaultValue=""
+                  >
+                    <option value="">Seleccionar ingrediente...</option>
+                    {availableIngredients
+                      .filter(p => !comboIngredients.some(ci => ci.ingredient_id === p.id))
+                      .map(product => (
+                        <option key={product.id} value={product.id}>
+                          {product.name} - €{product.price_per_portion.toFixed(2)}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    className={styles.addIngredientBtn}
+                    onClick={() => {
+                      const select = document.getElementById('ingredientSelect') as HTMLSelectElement
+                      if (select && select.value) {
+                        handleAddIngredient(select.value)
+                        select.value = ''
+                      }
+                    }}
+                    disabled={saving !== null}
+                  >
+                    {saving === 'adding-ingredient' ? (
+                      <Loader2 className={styles.buttonSpinner} size={16} />
+                    ) : (
+                      <Plus size={16} />
+                    )}
+                    Agregar
+                  </button>
+                </div>
               </div>
             </div>
 

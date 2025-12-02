@@ -104,7 +104,7 @@ export interface CalendarEvent {
   title: string
   date: string
   time?: string
-  type: 'Casamiento' | 'Aniversario' | 'Bautismo' | 'Empresarial' | 'Otros'
+  type: 'Casamiento' | 'Aniversario' | 'Bautismo' | 'Empresarial' | 'Otros' | 'Recordatorio' | 'Pago Pendiente'
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled'
   clientName: string
   location?: string

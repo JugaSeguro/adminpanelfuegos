@@ -939,9 +939,11 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
                 if (!editedData.material) return
                 if (!newMatName.trim()) { alert('Ingresa un nombre'); return }
                 const newData = { ...editedData! }
-                newData.material.items.push({ name: newMatName.trim(), quantity: newMatQty || 1, pricePerUnit: newMatPrice || 0, total: 0 })
-                setEditedData(recalculateTotals(newData))
-                setNewMatName(''); setNewMatQty(1); setNewMatPrice(0)
+                if (newData.material) {
+                  newData.material.items.push({ name: newMatName.trim(), quantity: newMatQty || 1, pricePerUnit: newMatPrice || 0, total: 0 })
+                  setEditedData(recalculateTotals(newData))
+                  setNewMatName(''); setNewMatQty(1); setNewMatPrice(0)
+                }
               }}>Agregar otro material</button>
             </div>
           </div>

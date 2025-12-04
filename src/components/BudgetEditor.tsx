@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { Product } from '@/types'
+import { Package, Plus, X, CheckSquare, CheckCircle2 } from 'lucide-react'
 import './BudgetEditor.css'
 
 // Función para formatear nombres con guiones
@@ -145,14 +147,96 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [materialExpanded, setMaterialExpanded] = useState(false)
+  const [clientInfoExpanded, setClientInfoExpanded] = useState(true)
+  const [menuExpanded, setMenuExpanded] = useState(true)
+  const [serviceExpanded, setServiceExpanded] = useState(false)
+  const [deliveryExpanded, setDeliveryExpanded] = useState(false)
+  const [softDrinksExpanded, setSoftDrinksExpanded] = useState(false)
+  const [deplacementExpanded, setDeplacementExpanded] = useState(false)
+
   const [newMatName, setNewMatName] = useState('')
   const [newMatQty, setNewMatQty] = useState<number>(1)
   const [newMatPrice, setNewMatPrice] = useState<number>(0)
 
-  // Cargar presupuesto
+  // Estados para el selector de materiales
+  const [availableMaterials, setAvailableMaterials] = useState<Product[]>([])
+  const [showMaterialSelector, setShowMaterialSelector] = useState(false)
+  const [selectedMaterialIds, setSelectedMaterialIds] = useState<string[]>([])
+
+  // Cargar presupuesto y materiales
   useEffect(() => {
     loadBudget()
+    loadMaterials()
   }, [budgetId])
+
+  const loadMaterials = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category', 'material')
+        .eq('active', true)
+        .order('name')
+      
+      if (error) throw error
+      if (data) setAvailableMaterials(data)
+    } catch (err) {
+      console.error('Error cargando materiales:', err)
+    }
+  }
+
+  const handleToggleMaterialSelection = (productId: string) => {
+    setSelectedMaterialIds(prev => 
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    )
+  }
+
+  const handleAddSelectedMaterials = () => {
+    if (!editedData) return
+
+    const materialsToAdd = availableMaterials.filter(p => selectedMaterialIds.includes(p.id))
+    if (materialsToAdd.length === 0) {
+      setShowMaterialSelector(false)
+      return
+    }
+
+    const newData = { ...editedData }
+    
+    // Si no existe la sección de material, crearla
+    if (!newData.material) {
+      newData.material = {
+        items: [],
+        totalHT: 0,
+        tvaPct: 20,
+        tva: 0,
+        totalTTC: 0,
+        insurancePct: 6,
+        insuranceAmount: 0
+      }
+    }
+
+    // Agregar nuevos items
+    materialsToAdd.forEach(product => {
+      // Verificar si ya existe un item con el mismo nombre para evitar duplicados exactos (opcional)
+      // Pero permitimos duplicados si el usuario quiere, o podemos filtrar.
+      // En este caso, simplemente agregamos.
+      const price = product.price_per_portion || 0
+      
+      newData.material!.items.push({
+        name: product.name,
+        quantity: 1, // Cantidad por defecto 1
+        pricePerUnit: price,
+        total: price * 1 // Total inicial
+      })
+    })
+
+    setEditedData(recalculateTotals(newData))
+    setShowMaterialSelector(false)
+    setSelectedMaterialIds([])
+  }
+
 
   const loadBudget = async () => {
     try {
@@ -578,94 +662,260 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
             🗑️
           </button>
         </div>
+
+      {/* Modal para selección de materiales */}
+      {showMaterialSelector && (
+        <div className="modal-overlay" onClick={() => setShowMaterialSelector(false)} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{
+            backgroundColor: 'white', borderRadius: '8px', width: '90%', maxWidth: '800px',
+            maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+          }}>
+            <div className="modal-header" style={{
+              padding: '15px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex',
+              alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Package size={24} />
+                Agregar Materiales
+              </h3>
+              <button onClick={() => setShowMaterialSelector(false)} style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#64748b'
+              }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '20px', overflowY: 'auto' }}>
+              <p style={{ marginBottom: '15px', color: '#64748b' }}>
+                Selecciona los materiales que deseas agregar al presupuesto.
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px' }}>
+                {availableMaterials.map(product => {
+                  const isSelected = selectedMaterialIds.includes(product.id)
+                  const alreadyInBudget = editedData?.material?.items.some(item => item.name === product.name)
+                  
+                  return (
+                    <div 
+                      key={product.id}
+                      onClick={() => handleToggleMaterialSelection(product.id)}
+                      style={{
+                        border: isSelected ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                        backgroundColor: isSelected ? '#eff6ff' : alreadyInBudget ? '#f1f5f9' : 'white',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        cursor: 'pointer',
+                        opacity: alreadyInBudget ? 0.8 : 1,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        transition: 'all 0.2s',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ 
+                        width: '20px', height: '20px', 
+                        border: isSelected ? 'none' : '1px solid #cbd5e1',
+                        backgroundColor: isSelected ? '#3b82f6' : 'white',
+                        borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0, marginTop: '2px'
+                      }}>
+                        {isSelected && <CheckSquare size={14} color="white" />}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px' }}>{product.name}</div>
+                        {product.clarifications && (
+                          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{product.clarifications}</div>
+                        )}
+                        {alreadyInBudget && (
+                          <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '4px', fontWeight: 500 }}>
+                            Posible duplicado
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{
+              padding: '15px 20px', borderTop: '1px solid #e2e8f0', display: 'flex',
+              justifyContent: 'flex-end', gap: '10px', backgroundColor: '#f8fafc'
+            }}>
+              <button onClick={() => setShowMaterialSelector(false)} className="btn btn-secondary">
+                Cancelar
+              </button>
+              <button 
+                onClick={handleAddSelectedMaterials}
+                className="btn btn-primary"
+                disabled={selectedMaterialIds.length === 0}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Plus size={18} />
+                Agregar {selectedMaterialIds.length} Material(es)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Información del Cliente */}
       <section className="budget-section editable">
-        <h2>📋 Información del Cliente</h2>
-        <div className="edit-grid">
-          <div className="edit-field">
-            <label>Nombre</label>
-            <input type="text" value={editedData.clientInfo.name} onChange={(e)=>updateField('clientInfo.name', e.target.value)} />
-          </div>
-          <div className="edit-field">
-            <label>Email</label>
-            <input type="email" value={editedData.clientInfo.email} onChange={(e)=>updateField('clientInfo.email', e.target.value)} />
-          </div>
-          <div className="edit-field">
-            <label>Teléfono</label>
-            <input type="text" value={editedData.clientInfo.phone} onChange={(e)=>updateField('clientInfo.phone', e.target.value)} />
-          </div>
-          <div className="edit-field">
-            <label>Tipo de evento</label>
-            <input type="text" value={editedData.clientInfo.eventType} onChange={(e)=>updateField('clientInfo.eventType', e.target.value)} />
-          </div>
-          <div className="edit-field">
-            <label>Fecha</label>
-            <input type="date" value={editedData.clientInfo.eventDate ? editedData.clientInfo.eventDate.substring(0,10) : ''} onChange={(e)=>updateField('clientInfo.eventDate', e.target.value)} />
-          </div>
-          <div className="edit-field">
-            <label>Invitados</label>
-            <input type="number" value={editedData.clientInfo.guestCount} min={0} onChange={(e)=>updateField('clientInfo.guestCount', parseInt(e.target.value)||0)} />
+        <div className="section-header-with-delete">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+            <button
+              onClick={() => setClientInfoExpanded(!clientInfoExpanded)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '18px',
+                color: '#e2943a',
+                padding: '0',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              title={clientInfoExpanded ? 'Colapsar' : 'Expandir'}
+            >
+              {clientInfoExpanded ? '▼' : '▶'}
+            </button>
+            <h2 style={{ margin: 0 }}>📋 Información del Cliente</h2>
           </div>
         </div>
+        {clientInfoExpanded && (
+          <div className="edit-grid">
+            <div className="edit-field">
+              <label>Nombre</label>
+              <input type="text" value={editedData.clientInfo.name} onChange={(e)=>updateField('clientInfo.name', e.target.value)} />
+            </div>
+            <div className="edit-field">
+              <label>Email</label>
+              <input type="email" value={editedData.clientInfo.email} onChange={(e)=>updateField('clientInfo.email', e.target.value)} />
+            </div>
+            <div className="edit-field">
+              <label>Teléfono</label>
+              <input type="text" value={editedData.clientInfo.phone} onChange={(e)=>updateField('clientInfo.phone', e.target.value)} />
+            </div>
+            <div className="edit-field">
+              <label>Tipo de evento</label>
+              <input type="text" value={editedData.clientInfo.eventType} onChange={(e)=>updateField('clientInfo.eventType', e.target.value)} />
+            </div>
+            <div className="edit-field">
+              <label>Fecha</label>
+              <input type="date" value={editedData.clientInfo.eventDate ? editedData.clientInfo.eventDate.substring(0,10) : ''} onChange={(e)=>updateField('clientInfo.eventDate', e.target.value)} />
+            </div>
+            <div className="edit-field">
+              <label>Invitados</label>
+              <input type="number" value={editedData.clientInfo.guestCount} min={0} onChange={(e)=>updateField('clientInfo.guestCount', parseInt(e.target.value)||0)} />
+            </div>
+          </div>
+        )}
       </section>
 
       {/* MENÚ - EDITABLE */}
       <section className="budget-section editable">
-        <h2>🍽️ Menú</h2>
-        <div className="edit-grid">
-          <div className="edit-field">
-            <label>Precio por Persona (€)</label>
-            <input
-              type="number"
-              value={editedData.menu.pricePerPerson}
-              onChange={(e) => updateField('menu.pricePerPerson', parseFloat(e.target.value) || 0)}
-              step="0.01"
-              min="0"
-            />
-          </div>
-          <div className="edit-field">
-            <label>Total Personas</label>
-            <input
-              type="number"
-              value={editedData.menu.totalPersons}
-              onChange={(e) => updateField('menu.totalPersons', parseInt(e.target.value) || 0)}
-              min="0"
-            />
-          </div>
-          <div className="edit-field">
-            <label>TVA (%)</label>
-            <input
-              type="number"
-              value={editedData.menu.tvaPct}
-              onChange={(e) => updateField('menu.tvaPct', parseFloat(e.target.value) || 0)}
-              step="0.1"
-              min="0"
-              max="100"
-            />
+        <div className="section-header-with-delete">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+            <button
+              onClick={() => setMenuExpanded(!menuExpanded)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '18px',
+                color: '#e2943a',
+                padding: '0',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              title={menuExpanded ? 'Colapsar' : 'Expandir'}
+            >
+              {menuExpanded ? '▼' : '▶'}
+            </button>
+            <h2 style={{ margin: 0 }}>🍽️ Menú</h2>
           </div>
         </div>
-        <div className="totals-box">
-          <div className="total-row">
-            <span>Total HT:</span>
-            <strong>{editedData.menu.totalHT.toFixed(2)} €</strong>
-          </div>
-          <div className="total-row">
-            <span>TVA ({editedData.menu.tvaPct}%):</span>
-            <strong>{editedData.menu.tva.toFixed(2)} €</strong>
-          </div>
-          <div className="total-row highlight">
-            <span>Total TTC:</span>
-            <strong>{editedData.menu.totalTTC.toFixed(2)} €</strong>
-          </div>
-        </div>
+        {menuExpanded && (
+          <>
+            <div className="edit-grid">
+              <div className="edit-field">
+                <label>Precio por Persona (€)</label>
+                <input
+                  type="number"
+                  value={editedData.menu.pricePerPerson}
+                  onChange={(e) => updateField('menu.pricePerPerson', parseFloat(e.target.value) || 0)}
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+              <div className="edit-field">
+                <label>Total Personas</label>
+                <input
+                  type="number"
+                  value={editedData.menu.totalPersons}
+                  onChange={(e) => updateField('menu.totalPersons', parseInt(e.target.value) || 0)}
+                  min="0"
+                />
+              </div>
+              <div className="edit-field">
+                <label>TVA (%)</label>
+                <input
+                  type="number"
+                  value={editedData.menu.tvaPct}
+                  onChange={(e) => updateField('menu.tvaPct', parseFloat(e.target.value) || 0)}
+                  step="0.1"
+                  min="0"
+                  max="100"
+                />
+              </div>
+            </div>
+            <div className="totals-box">
+              <div className="total-row">
+                <span>Total HT:</span>
+                <strong>{editedData.menu.totalHT.toFixed(2)} €</strong>
+              </div>
+              <div className="total-row">
+                <span>TVA ({editedData.menu.tvaPct}%):</span>
+                <strong>{editedData.menu.tva.toFixed(2)} €</strong>
+              </div>
+              <div className="total-row highlight">
+                <span>Total TTC:</span>
+                <strong>{editedData.menu.totalTTC.toFixed(2)} €</strong>
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
       {/* SERVICIO (SERVEURS) - EDITABLE */}
       <section className="budget-section editable">
         <div className="section-header-with-delete">
-          <h2>👔 Serveurs</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+            <button
+              onClick={() => setServiceExpanded(!serviceExpanded)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '18px',
+                color: '#e2943a',
+                padding: '0',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              title={serviceExpanded ? 'Colapsar' : 'Expandir'}
+            >
+              {serviceExpanded ? '▼' : '▶'}
+            </button>
+            <h2 style={{ margin: 0 }}>👔 Serveurs</h2>
+          </div>
           {editedData.service && (
             <button
               className="btn-delete-section"
@@ -685,6 +935,8 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
             </button>
           )}
         </div>
+        {serviceExpanded && (
+          <>
         
         {!editedData.service ? (
           <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
@@ -774,6 +1026,8 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
                 <strong>{editedData.service.totalTTC.toFixed(2)} €</strong>
               </div>
             </div>
+          </>
+        )}
           </>
         )}
       </section>
@@ -920,34 +1174,19 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
                 )
               })}
           </div>
-          <div className="material-item-row">
-            <div className="edit-field">
-              <label>Autre-Matériel (Nombre/Descripción)</label>
-              <input type="text" value={newMatName} onChange={(e)=>setNewMatName(e.target.value)} placeholder="Ej. Centro de mesa personalizado" />
-            </div>
-            <div className="edit-field">
-              <label>Cantidad</label>
-              <input type="number" min="0" step="0.01" value={newMatQty} onChange={(e)=>setNewMatQty(parseFloat(e.target.value)||0)} />
-            </div>
-            <div className="edit-field">
-              <label>Precio Unit. (€)</label>
-              <input type="number" min="0" step="0.01" value={newMatPrice} onChange={(e)=>setNewMatPrice(parseFloat(e.target.value)||0)} />
-            </div>
-            <div className="edit-field">
-              <label>&nbsp;</label>
-              <button className="btn btn-primary" onClick={()=>{
-                if (!editedData.material) return
-                if (!newMatName.trim()) { alert('Ingresa un nombre'); return }
-                const newData = { ...editedData! }
-                if (newData.material) {
-                  newData.material.items.push({ name: newMatName.trim(), quantity: newMatQty || 1, pricePerUnit: newMatPrice || 0, total: 0 })
-                  setEditedData(recalculateTotals(newData))
-                  setNewMatName(''); setNewMatQty(1); setNewMatPrice(0)
-                }
-              }}>Agregar otro material</button>
-            </div>
+          
+          <div className="add-material-actions" style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => setShowMaterialSelector(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Package size={18} />
+              Seleccionar Materiales de la Lista
+            </button>
           </div>
-          <div className="edit-grid" style={{ marginTop: '10px' }}>
+
+          <div className="edit-grid" style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
             <div className="edit-field">
               <label>TVA (%)</label>
               <input
@@ -999,7 +1238,25 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
       {editedData.deliveryReprise && (
         <section className="budget-section editable">
           <div className="section-header-with-delete">
-            <h2>🚚 Livraison et Reprise</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+              <button
+                onClick={() => setDeliveryExpanded(!deliveryExpanded)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  color: '#e2943a',
+                  padding: '0',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                title={deliveryExpanded ? 'Colapsar' : 'Expandir'}
+              >
+                {deliveryExpanded ? '▼' : '▶'}
+              </button>
+              <h2 style={{ margin: 0 }}>🚚 Livraison et Reprise</h2>
+            </div>
             <button
               className="btn-delete-section"
               onClick={() => {
@@ -1017,6 +1274,8 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
               ✕
             </button>
           </div>
+          {deliveryExpanded && (
+          <>
           <div className="edit-grid">
             <div className="edit-field">
               <label>Coste de entrega (€)</label>
@@ -1045,6 +1304,8 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
               <strong>{editedData.deliveryReprise.totalTTC.toFixed(2)} €</strong>
             </div>
           </div>
+          </>
+          )}
         </section>
       )}
 
@@ -1065,7 +1326,25 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
       {editedData.boissonsSoft && (
         <section className="budget-section editable">
           <div className="section-header-with-delete">
-            <h2>🥤 Boissons Soft</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+              <button
+                onClick={() => setSoftDrinksExpanded(!softDrinksExpanded)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  color: '#e2943a',
+                  padding: '0',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                title={softDrinksExpanded ? 'Colapsar' : 'Expandir'}
+              >
+                {softDrinksExpanded ? '▼' : '▶'}
+              </button>
+              <h2 style={{ margin: 0 }}>🥤 Boissons Soft</h2>
+            </div>
             <button
               className="btn-delete-section"
               onClick={() => {
@@ -1083,6 +1362,8 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
               ✕
             </button>
           </div>
+          {softDrinksExpanded && (
+          <>
           <div className="edit-grid">
             <div className="edit-field">
               <label>Precio por Persona (€)</label>
@@ -1127,6 +1408,8 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
               <strong>{editedData.boissonsSoft.totalTTC.toFixed(2)} €</strong>
             </div>
           </div>
+          </>
+          )}
         </section>
       )}
 
@@ -1154,7 +1437,25 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
       {editedData.deplacement && editedData.deplacement.distance > 0 && (
         <section className="budget-section editable">
           <div className="section-header-with-delete">
-            <h2>🚗 Desplazamiento</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+              <button
+                onClick={() => setDeplacementExpanded(!deplacementExpanded)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  color: '#e2943a',
+                  padding: '0',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                title={deplacementExpanded ? 'Colapsar' : 'Expandir'}
+              >
+                {deplacementExpanded ? '▼' : '▶'}
+              </button>
+              <h2 style={{ margin: 0 }}>🚗 Desplazamiento</h2>
+            </div>
             <button
               className="btn-delete-section"
               onClick={() => {
@@ -1172,6 +1473,8 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
               ✕
             </button>
           </div>
+          {deplacementExpanded && (
+          <>
           <div className="edit-grid">
             <div className="edit-field">
               <label>Distancia (km)</label>
@@ -1219,6 +1522,8 @@ export function BudgetEditor({ budgetId, onBudgetDeleted }: BudgetEditorProps) {
               <strong>{editedData.deplacement.totalTTC.toFixed(2)} €</strong>
             </div>
           </div>
+          </>
+          )}
         </section>
       )}
 

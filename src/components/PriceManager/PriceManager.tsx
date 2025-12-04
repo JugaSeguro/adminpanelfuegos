@@ -13,7 +13,8 @@ const CATEGORIES = [
   { id: 'verduras', name: 'verduras', displayName: 'Acompañamiento' },
   { id: 'postres', name: 'postres', displayName: 'Postres' },
   { id: 'pan', name: 'pan', displayName: 'Pan' },
-  { id: 'extras', name: 'extras', displayName: 'Extras' }
+  { id: 'extras', name: 'extras', displayName: 'Extras' },
+  { id: 'material', name: 'material', displayName: 'Material' }
 ]
 
 export default function PriceManager() {

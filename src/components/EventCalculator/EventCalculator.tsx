@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import {
   Plus, X, Download, Calculator, Users, Trash2, ChevronDown, ChevronUp,
   CheckSquare, Square, Save, History, Calendar, BarChart3, FileText,
-  StickyNote, Eye, Copy, Filter, Search, TrendingUp, Clock, AlertCircle, List, RefreshCw, CheckCircle2, Wrench, Share2, ChevronRight
+  StickyNote, Eye, Copy, Filter, Search, TrendingUp, Clock, AlertCircle, List, RefreshCw, CheckCircle2, Wrench, Share2, ChevronRight, Package
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
@@ -24,6 +24,8 @@ interface EventIngredient {
   quantityPerPerson: number
   notes?: string
   dbId?: string // ID en la base de datos
+  isFixedQuantity?: boolean
+  totalQuantity?: number
 }
 
 interface Event {
@@ -77,6 +79,30 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
   const [eventVersions, setEventVersions] = useState<{ [key: string]: EventCalculationVersion[] }>({})
   const [eventNotes, setEventNotes] = useState<{ [key: string]: EventCalculationNote[] }>({})
   const [showSummary, setShowSummary] = useState(false)
+  const [showMaterialSelectorModal, setShowMaterialSelectorModal] = useState(false)
+  const [currentEventIdForSelector, setCurrentEventIdForSelector] = useState<string | null>(null)
+  const [selectedMaterialIds, setSelectedMaterialIds] = useState<string[]>([])
+  const [comboIngredientsMap, setComboIngredientsMap] = useState<{ [comboId: string]: any[] }>({})
+
+  // Cargar ingredientes de combos al inicio
+  useEffect(() => {
+    const loadAllComboIngredients = async () => {
+      const { data, error } = await supabase
+        .from('combo_ingredients')
+        .select('combo_id, ingredient_id, quantity')
+      
+      if (data) {
+        const map: { [key: string]: any[] } = {}
+        data.forEach(item => {
+          if (!map[item.combo_id]) map[item.combo_id] = []
+          map[item.combo_id].push(item)
+        })
+        setComboIngredientsMap(map)
+      }
+    }
+    loadAllComboIngredients()
+  }, [])
+
 
   // Filtrar pedidos aprobados con fecha de evento
   const availableOrders = orders.filter(order =>
@@ -151,8 +177,8 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
 
     // Si el unit_type es "porcion" y no tiene "gr" en portion_per_person
     if (product.unit_type === 'porcion') {
-      // Si portion_per_person es una fracción o número simple, mostrar "porcion"
-      return 'porcion'
+      // Si portion_per_person es una fracción o número simple, mostrar "unidad" (cambio solicitado)
+      return 'unidad'
     }
 
     // Si el unit_type es "kg", verificar si debe mostrarse en gr
@@ -192,12 +218,8 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
   const convertToDisplayUnitForSummary = (product: Product, quantity: number): { value: number, unit: string } => {
     // Si el producto usa kg como unidad base
     if (product.unit_type === 'kg') {
-      // Si la cantidad es >= 1 kg, siempre mostrar en kg
-      if (quantity >= 1) {
-        return { value: quantity, unit: 'kg' }
-      }
-      // Si es < 1 kg, mostrar en gr
-      return { value: quantity * 1000, unit: 'gr' }
+      // Siempre mostrar en kg para el resumen total (cambio solicitado)
+      return { value: quantity, unit: 'kg' }
     }
 
     // Para productos con unit_type 'unidad', siempre mostrar en unidad
@@ -207,19 +229,15 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
 
     // Para productos con unit_type 'porcion'
     if (product.unit_type === 'porcion') {
-      // Si tiene portion_per_person con "gr" y la cantidad es < 1 kg, mostrar en gr
+      // Si tiene portion_per_person con "gr", mostrar en kg para el resumen
       if (product.portion_per_person) {
         const portionLower = product.portion_per_person.toLowerCase().replace(/,/g, '.')
-        if ((portionLower.includes('gr') || portionLower.includes('g')) && quantity < 1) {
-          return { value: quantity * 1000, unit: 'gr' }
+        if (portionLower.includes('gr') || portionLower.includes('g')) {
+          return { value: quantity, unit: 'kg' }
         }
       }
-      // Si la cantidad es >= 1 kg (aunque sea porcion), mostrar en kg
-      if (quantity >= 1) {
-        return { value: quantity, unit: 'kg' }
-      }
-      // De lo contrario, mostrar en porcion
-      return { value: quantity, unit: 'porcion' }
+      // De lo contrario, mostrar en unidad
+      return { value: quantity, unit: 'unidad' }
     }
 
     // Por defecto, usar el unit_type del producto
@@ -319,7 +337,8 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
                 dbId: ing.id,
                 product: product,
                 quantityPerPerson: ing.quantity_per_person,
-                notes: ing.notes || undefined
+                notes: ing.notes || undefined,
+                isFixedQuantity: ing.is_fixed_quantity
               } as EventIngredient
             })
             .filter((ing): ing is EventIngredient => ing !== null) // Filtrar nulls
@@ -606,15 +625,20 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
               console.error(`❌ Ingrediente sin producto válido en índice ${index}:`, ing)
               return null
             }
+            
+            const isFixed = ing.isFixedQuantity || false
+            const totalQuantity = isFixed ? ing.quantityPerPerson : ing.quantityPerPerson * event.guestCount
+
             return {
               event_calculation_id: eventDbId,
               product_id: ing.product.id,
               quantity_per_person: ing.quantityPerPerson,
-              total_quantity: ing.quantityPerPerson * event.guestCount,
+              total_quantity: totalQuantity,
               unit_price: ing.product.price_per_portion,
-              total_cost: ing.product.price_per_portion * ing.quantityPerPerson * event.guestCount,
+              total_cost: ing.product.price_per_portion * totalQuantity,
               notes: ing.notes || null,
-              display_order: index
+              display_order: index,
+              is_fixed_quantity: isFixed
             }
           }).filter((ing): ing is NonNullable<typeof ing> => ing !== null)
 
@@ -670,7 +694,11 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
 
       event.ingredients.forEach(ing => {
         const category = ing.product.category
-        const cost = ing.product.price_per_portion * ing.quantityPerPerson * event.guestCount
+        const totalQuantity = ing.isFixedQuantity
+          ? ing.quantityPerPerson
+          : ing.quantityPerPerson * event.guestCount
+        
+        const cost = ing.product.price_per_portion * totalQuantity
 
         costByCategory[category] = (costByCategory[category] || 0) + cost
         ingredientsByCategory[category] = (ingredientsByCategory[category] || 0) + 1
@@ -682,10 +710,16 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
       )
 
       const mostUsed = event.ingredients.reduce((max, ing) => {
-        const totalQty = ing.quantityPerPerson * event.guestCount
-        const maxQty = max.quantityPerPerson * event.guestCount
+        const totalQty = ing.isFixedQuantity
+          ? ing.quantityPerPerson
+          : ing.quantityPerPerson * event.guestCount
+        
+        const maxQty = max.isFixedQuantity
+          ? max.quantityPerPerson
+          : max.quantityPerPerson * event.guestCount
+          
         return totalQty > maxQty ? ing : max
-      }, event.ingredients[0] || { product: {} as Product, quantityPerPerson: 0 })
+      }, event.ingredients[0] || { product: {} as Product, quantityPerPerson: 0, isFixedQuantity: false })
 
       // Eliminar estadísticas existentes para este evento
       await supabase
@@ -793,6 +827,50 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
         console.error(`  ❌ Postre no encontrado: ${order.dessert}`)
       }
     }
+
+    // Procesar equipamiento/materiales extra
+    if (order.extras && order.extras.equipment && Array.isArray(order.extras.equipment)) {
+      order.extras.equipment.forEach((item, index) => {
+        const product = findProductByName(item)
+        if (product) {
+          const isMaterial = product.category === 'material'
+          // Si es material, es cantidad fija (default 1). Si no, lógica estándar.
+          const quantityPerPerson = isMaterial ? 1 : (product.portion_per_person
+            ? parsePortionPerPerson(product.portion_per_person)
+            : 1)
+
+          ingredients.push({
+            id: `${Date.now()}-extra-${index}-${item}`,
+            product,
+            quantityPerPerson,
+            notes: product.clarifications || undefined,
+            isFixedQuantity: isMaterial
+          })
+          console.log(`  ✅ Extra agregado: ${item} → ${product.name} (${quantityPerPerson} ${isMaterial ? 'total fijo' : 'por persona'})`)
+        } else {
+          notFoundItems.push(`Extra: ${item}`)
+          console.error(`  ❌ Extra no encontrado: ${item}`)
+        }
+      })
+    }
+
+    // TODO: Si hay acompañamientos fijos que siempre deben estar (ej. Pan, Salsas), agregarlos aquí.
+    // Actualmente no se agregan porque no están explícitos en la orden y no hay una lista definida.
+    // Ejemplo de implementación futura:
+    /*
+    const standardSides = ['Pan', 'Salsa Criolla', 'Chimichurri']
+    standardSides.forEach(name => {
+      const product = findProductByName(name)
+      if (product) {
+        ingredients.push({
+          id: `${Date.now()}-standard-${name}`,
+          product,
+          quantityPerPerson: 1, // o product.portion_per_person
+          notes: 'Acompañamiento estándar'
+        })
+      }
+    })
+    */
 
     // Mostrar advertencia si hay items no encontrados
     if (notFoundItems.length > 0) {
@@ -1023,7 +1101,10 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
     const ingredientCosts: { product: Product; quantity: number; cost: number }[] = []
 
     event.ingredients.forEach(ing => {
-      const totalQuantity = ing.quantityPerPerson * event.guestCount
+      const totalQuantity = ing.isFixedQuantity 
+        ? ing.quantityPerPerson 
+        : ing.quantityPerPerson * event.guestCount
+      
       const cost = ing.product.price_per_portion * totalQuantity
       totalCost += cost
       ingredientCosts.push({
@@ -1091,16 +1172,22 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
                 .eq('event_calculation_id', event.dbId)
 
               // Insertar ingredientes actualizados
-              const ingredientsToInsert = event.ingredients.map((ing, index) => ({
-                event_calculation_id: event.dbId,
-                product_id: ing.product.id,
-                quantity_per_person: ing.quantityPerPerson,
-                total_quantity: ing.quantityPerPerson * event.guestCount,
-                unit_price: ing.product.price_per_portion,
-                total_cost: ing.product.price_per_portion * ing.quantityPerPerson * event.guestCount,
-                notes: ing.notes || null,
-                display_order: index
-              }))
+              const ingredientsToInsert = event.ingredients.map((ing, index) => {
+                const isFixed = ing.isFixedQuantity || false
+                const totalQuantity = isFixed ? ing.quantityPerPerson : ing.quantityPerPerson * event.guestCount
+
+                return {
+                  event_calculation_id: event.dbId,
+                  product_id: ing.product.id,
+                  quantity_per_person: ing.quantityPerPerson,
+                  total_quantity: totalQuantity,
+                  unit_price: ing.product.price_per_portion,
+                  total_cost: ing.product.price_per_portion * totalQuantity,
+                  notes: ing.notes || null,
+                  display_order: index,
+                  is_fixed_quantity: isFixed
+                }
+              })
 
               const { error: ingError } = await supabase
                 .from('event_calculation_ingredients')
@@ -1156,6 +1243,67 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
     }
   }
 
+  const handleOpenMaterialSelector = (eventId: string) => {
+    setCurrentEventIdForSelector(eventId)
+    setSelectedMaterialIds([])
+    setShowMaterialSelectorModal(true)
+  }
+
+  const handleToggleMaterialSelection = (productId: string) => {
+    setSelectedMaterialIds(prev => 
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    )
+  }
+
+  const handleAddSelectedMaterials = async () => {
+    if (!currentEventIdForSelector) return
+
+    const event = events.find(e => e.id === currentEventIdForSelector)
+    if (!event) return
+
+    const materialsToAdd = availableProducts.filter(p => selectedMaterialIds.includes(p.id))
+    if (materialsToAdd.length === 0) {
+      setShowMaterialSelectorModal(false)
+      return
+    }
+
+    // Filtrar los que ya existen en el evento
+    const newMaterials = materialsToAdd.filter(p => !event.ingredients.some(ing => ing.product.id === p.id))
+
+    if (newMaterials.length === 0) {
+      setShowMaterialSelectorModal(false)
+      return
+    }
+
+    const newIngredients: EventIngredient[] = newMaterials.map((product, index) => {
+      // Asumimos que son materiales si se agregan desde este modal
+      const quantityPerPerson = 1 
+      
+      return {
+        id: `${Date.now()}-material-${index}-${product.id}`,
+        product,
+        quantityPerPerson,
+        notes: product.clarifications || undefined,
+        isFixedQuantity: true
+      }
+    })
+
+    const updatedEvent = {
+      ...event,
+      ingredients: [...event.ingredients, ...newIngredients],
+      isSaved: false
+    }
+
+    setEvents(events.map(e => e.id === currentEventIdForSelector ? updatedEvent : e))
+    await saveEvent(updatedEvent)
+    
+    setShowMaterialSelectorModal(false)
+    setSelectedMaterialIds([])
+    setCurrentEventIdForSelector(null)
+  }
+
   const handleAddIngredient = async (eventId: string, productId: string) => {
     const product = availableProducts.find(p => p.id === productId)
     if (!product) return
@@ -1168,15 +1316,21 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
     }
 
     // Usar portion_per_person del producto si está disponible, sino usar 1 por defecto
-    const quantityPerPerson = product.portion_per_person
-      ? parsePortionPerPerson(product.portion_per_person)
-      : 1
+    // Si es material, usar cantidad fija (isFixedQuantity = true) y cantidad 1
+    const isMaterial = product.category === 'material'
+    
+    const quantityPerPerson = isMaterial 
+      ? 1 
+      : (product.portion_per_person
+          ? parsePortionPerPerson(product.portion_per_person)
+          : 1)
 
     const newIngredient: EventIngredient = {
       id: `${Date.now()}`,
       product,
       quantityPerPerson,
-      notes: product.clarifications || undefined
+      notes: product.clarifications || undefined,
+      isFixedQuantity: isMaterial
     }
 
     const updatedEvent = {
@@ -1260,7 +1414,31 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
 
     events.forEach(event => {
       event.ingredients.forEach(ing => {
-        const totalForEvent = ing.quantityPerPerson * event.guestCount
+        const totalForEvent = ing.isFixedQuantity
+          ? ing.quantityPerPerson
+          : ing.quantityPerPerson * event.guestCount
+
+        // Si es combo, desglosar ingredientes
+        if (ing.product.is_combo) {
+          const subIngs = comboIngredientsMap[ing.product.id]
+          if (subIngs && subIngs.length > 0) {
+            subIngs.forEach(sub => {
+              const subProduct = products.find(p => p.id === sub.ingredient_id)
+              if (subProduct) {
+                const subTotal = totalForEvent * sub.quantity
+                if (totals[subProduct.id]) {
+                  totals[subProduct.id].total += subTotal
+                } else {
+                  totals[subProduct.id] = {
+                    product: subProduct,
+                    total: subTotal
+                  }
+                }
+              }
+            })
+            return // No agregar el producto combo en sí mismo
+          }
+        }
 
         if (totals[ing.product.id]) {
           totals[ing.product.id].total += totalForEvent
@@ -1404,6 +1582,17 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
 
     let yPos = 35
 
+    const categoryNames: { [key: string]: string } = {
+      'entradas': 'Entradas',
+      'carnes_clasicas': 'Carnes Clásicas',
+      'carnes_premium': 'Carnes Premium',
+      'verduras': 'Acompañamiento',
+      'postres': 'Postres',
+      'pan': 'Pan',
+      'extras': 'Extras',
+      'material': 'Material'
+    }
+
     // Para cada evento
     filteredEvents.forEach((event) => {
       if (yPos > 250) {
@@ -1423,30 +1612,90 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
         yPos += 8
       }
 
-      const eventData = event.ingredients.map(ing => {
-        const portionInfo = ing.product.portion_per_person
-          ? ` (Estándar: ${ing.product.portion_per_person})`
-          : ''
-        const perPersonDisplay = convertToDisplayUnit(ing.product, ing.quantityPerPerson)
-        const totalDisplay = convertToDisplayUnitForSummary(ing.product, ing.quantityPerPerson * event.guestCount)
-        return [
-          ing.product.name + portionInfo,
-          `${perPersonDisplay.value.toFixed(2)} ${perPersonDisplay.unit}`,
-          `${totalDisplay.value.toFixed(2)} ${totalDisplay.unit}`
-        ]
+      // Agrupar ingredientes por categoría
+      const ingredientsByCategory: { [key: string]: EventIngredient[] } = {}
+      event.ingredients.forEach(ing => {
+        const cat = ing.product.category
+        if (!ingredientsByCategory[cat]) ingredientsByCategory[cat] = []
+        ingredientsByCategory[cat].push(ing)
       })
 
-      doc.autoTable({
-        startY: yPos,
-        head: [['Ingrediente', 'Cantidad/Persona', 'Total']],
-        body: eventData,
-        theme: 'striped',
-        headStyles: { fillColor: [102, 126, 234] },
-        margin: { left: 14, right: 14 },
-        styles: { fontSize: 10 }
+      // Iterar categorías
+      Object.keys(categoryNames).forEach(catKey => {
+        const catIngredients = ingredientsByCategory[catKey]
+        if (!catIngredients || catIngredients.length === 0) return
+
+        if (yPos > 250) {
+          doc.addPage()
+          yPos = 20
+        }
+
+        doc.setFontSize(12)
+        doc.setTextColor(102, 126, 234)
+        doc.text(categoryNames[catKey], 14, yPos)
+        yPos += 6
+
+        const eventData: any[] = []
+
+        catIngredients.forEach(ing => {
+          const processIngredient = (product: Product, quantityPerPerson: number, isFixed: boolean, parentName?: string) => {
+            const portionInfo = product.portion_per_person && !isFixed
+              ? ` (Estándar: ${product.portion_per_person})`
+              : ''
+            
+            const fixedInfo = isFixed ? ' (Fijo)' : ''
+            const name = parentName ? `${parentName} -> ${product.name}` : product.name
+            
+            const perPersonDisplay = convertToDisplayUnit(product, quantityPerPerson)
+            
+            const totalQuantity = isFixed
+              ? quantityPerPerson
+              : quantityPerPerson * event.guestCount
+              
+            const totalDisplay = convertToDisplayUnitForSummary(product, totalQuantity)
+            
+            // Formateo: sin decimales para unidad
+            const perPersonVal = perPersonDisplay.unit === 'unidad' ? perPersonDisplay.value.toFixed(0) : perPersonDisplay.value.toFixed(2)
+            const totalVal = totalDisplay.unit === 'unidad' ? totalDisplay.value.toFixed(0) : totalDisplay.value.toFixed(2)
+
+            eventData.push([
+              name + portionInfo + fixedInfo,
+              isFixed ? '-' : `${perPersonVal} ${perPersonDisplay.unit}`,
+              `${totalVal} ${totalDisplay.unit}`
+            ])
+          }
+
+          if (ing.product.is_combo) {
+            const subIngs = comboIngredientsMap[ing.product.id]
+            if (subIngs && subIngs.length > 0) {
+              subIngs.forEach(sub => {
+                const subProduct = products.find(p => p.id === sub.ingredient_id)
+                if (subProduct) {
+                   processIngredient(subProduct, sub.quantity * ing.quantityPerPerson, !!ing.isFixedQuantity, ing.product.name)
+                }
+              })
+            } else {
+              processIngredient(ing.product, ing.quantityPerPerson, !!ing.isFixedQuantity)
+            }
+          } else {
+            processIngredient(ing.product, ing.quantityPerPerson, !!ing.isFixedQuantity)
+          }
+        })
+
+        doc.autoTable({
+          startY: yPos,
+          head: [['Ingrediente', 'Cantidad/Persona', 'Total']],
+          body: eventData,
+          theme: 'striped',
+          headStyles: { fillColor: [102, 126, 234] },
+          margin: { left: 14, right: 14 },
+          styles: { fontSize: 10 }
+        })
+
+        yPos = (doc as any).lastAutoTable.finalY + 8
       })
 
-      yPos = (doc as any).lastAutoTable.finalY + 15
+      yPos += 10
     })
 
     // Resumen general agrupado por categoría
@@ -1461,17 +1710,10 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
     yPos += 10
 
     const byCategory = calculateTotalsByCategory()
-    const categoryNames: { [key: string]: string } = {
-      'entradas': 'Entradas',
-      'carnes_clasicas': 'Carnes Clásicas',
-      'carnes_premium': 'Carnes Premium',
-      'verduras': 'Acompañamiento',
-      'postres': 'Postres',
-      'pan': 'Pan',
-      'extras': 'Extras'
-    }
+    
+    Object.keys(categoryNames).forEach(category => {
+      if (!byCategory[category] || byCategory[category].length === 0) return
 
-    Object.keys(byCategory).forEach(category => {
       if (yPos > 250) {
         doc.addPage()
         yPos = 20
@@ -1483,10 +1725,11 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
       yPos += 8
 
       const categoryData = byCategory[category].map(item => {
-        const display = convertToDisplayUnit(item.product, item.total)
+        const display = convertToDisplayUnitForSummary(item.product, item.total)
+        const val = display.unit === 'unidad' ? display.value.toFixed(0) : display.value.toFixed(2)
         return [
           item.product.name,
-          `${display.value.toFixed(2)} ${display.unit}`
+          `${val} ${display.unit}`
         ]
       })
 
@@ -1507,9 +1750,10 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
     const grandTotals = calculateGrandTotals()
     const summaryData = grandTotals.map(item => {
       const display = convertToDisplayUnitForSummary(item.product, item.total)
+      const val = display.unit === 'unidad' ? display.value.toFixed(0) : display.value.toFixed(2)
       return [
         item.product.name,
-        `${display.value.toFixed(2)} ${display.unit}`
+        `${val} ${display.unit}`
       ]
     })
 
@@ -2033,7 +2277,12 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
                                     <td className={styles.ingredientName}>
                                       <div>
                                         <strong>{ing.product.name}</strong>
-                                        {portionFromProduct && (
+                                        {ing.isFixedQuantity && (
+                                          <span className={styles.fixedQuantityBadge} title="Cantidad fija por evento (no se multiplica por invitados)">
+                                            🔒 Fijo
+                                          </span>
+                                        )}
+                                        {!ing.isFixedQuantity && portionFromProduct && (
                                           <div className={styles.portionInfo}>
                                             <span className={styles.portionLabel}>
                                               Porción estándar: {portionFromProduct}
@@ -2089,7 +2338,10 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
                                     </td>
                                     <td className={styles.total}>
                                       {(() => {
-                                        const totalQuantity = ing.quantityPerPerson * event.guestCount
+                                        const totalQuantity = ing.isFixedQuantity 
+                                          ? ing.quantityPerPerson 
+                                          : ing.quantityPerPerson * event.guestCount
+                                        
                                         const display = convertToDisplayUnitForSummary(ing.product, totalQuantity)
                                         return `${display.value.toFixed(2)} ${display.unit}`
                                       })()}
@@ -2132,6 +2384,28 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
                               </option>
                             ))}
                         </select>
+
+                        <button
+                          className={styles.addMaterialsBtn}
+                          onClick={() => handleOpenMaterialSelector(event.id)}
+                          title="Seleccionar múltiples materiales"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 16px',
+                            backgroundColor: '#f1f5f9',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '6px',
+                            color: '#475569',
+                            cursor: 'pointer',
+                            fontWeight: 500,
+                            marginLeft: '10px'
+                          }}
+                        >
+                          <Package size={18} />
+                          Materiales
+                        </button>
                       </div>
                     </div>
                   )}
@@ -2691,6 +2965,106 @@ export default function EventCalculator({ products, orders }: EventCalculatorPro
           </div>
         </div>
       )}
+
+      {/* Modal para agregar materiales */}
+      {showMaterialSelectorModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowMaterialSelectorModal(false)}>
+          <div className={styles.modalLarge} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>
+                <Package size={24} />
+                Agregar Materiales
+              </h3>
+              <button
+                className={styles.closeButton}
+                onClick={() => setShowMaterialSelectorModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <p style={{ marginBottom: '15px', color: '#64748b' }}>
+                Selecciona los materiales que deseas agregar al evento. Se agregarán como cantidad fija (1 unidad por defecto).
+              </p>
+              
+              <div className={styles.materialsGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
+                {availableProducts
+                  .filter(p => p.category === 'material')
+                  .map(product => {
+                    const isSelected = selectedMaterialIds.includes(product.id)
+                    const event = events.find(e => e.id === currentEventIdForSelector)
+                    const alreadyInEvent = event?.ingredients.some(ing => ing.product.id === product.id)
+
+                    return (
+                      <div 
+                        key={product.id}
+                        onClick={() => !alreadyInEvent && handleToggleMaterialSelection(product.id)}
+                        style={{
+                          border: isSelected ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                          backgroundColor: isSelected ? '#eff6ff' : alreadyInEvent ? '#f1f5f9' : 'white',
+                          borderRadius: '8px',
+                          padding: '12px',
+                          cursor: alreadyInEvent ? 'default' : 'pointer',
+                          opacity: alreadyInEvent ? 0.6 : 1,
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '10px',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <div style={{ 
+                          width: '20px', 
+                          height: '20px', 
+                          border: isSelected ? 'none' : '1px solid #cbd5e1',
+                          backgroundColor: isSelected ? '#3b82f6' : 'white',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          marginTop: '2px'
+                        }}>
+                          {isSelected && <CheckSquare size={14} color="white" />}
+                          {alreadyInEvent && !isSelected && <CheckCircle2 size={14} color="#94a3b8" />}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px' }}>{product.name}</div>
+                          {product.clarifications && (
+                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{product.clarifications}</div>
+                          )}
+                          {alreadyInEvent && (
+                            <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '4px', fontWeight: 500 }}>
+                              Ya agregado
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setShowMaterialSelectorModal(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className={styles.confirmButton}
+                onClick={handleAddSelectedMaterials}
+                disabled={selectedMaterialIds.length === 0}
+              >
+                <Plus size={18} />
+                Agregar {selectedMaterialIds.length} Material(es)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

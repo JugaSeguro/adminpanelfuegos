@@ -1683,3 +1683,15 @@
   }
 }
 
+
+.fixedQuantityBadge {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #475569;
+  font-weight: 600;
+  display: inline-block;
+  vertical-align: middle;
+}

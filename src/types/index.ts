@@ -127,7 +127,7 @@ export interface Reminder {
 export interface Product {
   id: string
   name: string
-  category: 'entradas' | 'carnes_clasicas' | 'carnes_premium' | 'verduras' | 'postres' | 'pan' | 'extras'
+  category: 'entradas' | 'carnes_clasicas' | 'carnes_premium' | 'verduras' | 'postres' | 'pan' | 'extras' | 'material'
   price_per_kg: number | null
   price_per_portion: number
   unit_type: 'kg' | 'unidad' | 'porcion'
@@ -184,6 +184,7 @@ export interface EventCalculationIngredient {
   total_cost: number
   notes: string | null
   display_order: number
+  is_fixed_quantity?: boolean
   created_at: string
   product?: Product
 }

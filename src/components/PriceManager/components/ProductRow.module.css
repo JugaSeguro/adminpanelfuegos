@@ -1,0 +1,299 @@
+.productCard {
+    background: #fafafa;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    padding: 0.85rem;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.productCard:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.productCard.edited {
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+
+.productCard.inactive {
+    opacity: 0.6;
+    background: #f5f5f5;
+}
+
+.productHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.productName {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 0.25rem 0;
+}
+
+.comboBadge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.productNotes {
+    font-size: 0.75rem;
+    color: #666;
+    padding: 0.5rem;
+    background: #f9f9f9;
+    border-radius: 6px;
+    margin: 0.5rem 0;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.toggleSwitch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+}
+
+.toggleSwitch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggleSwitch input:checked+.slider {
+    background-color: #10b981;
+}
+
+.toggleSwitch input:checked+.slider:before {
+    transform: translateX(24px);
+}
+
+.toggleSwitch input:disabled+.slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.productBody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pricesContainer {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.priceInputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 120px;
+}
+
+.priceLabel {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.inputWrapper {
+    position: relative;
+}
+
+.currencySymbol {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #666;
+}
+
+.priceInput {
+    width: 100%;
+    padding: 0.6rem 0.8rem 0.6rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+    background: white;
+}
+
+.priceInput:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.priceInput:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.portionInput {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.95rem;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+    background: white;
+    font-weight: 500;
+}
+
+.portionInput:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.portionInput:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.clarificationsSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.clarificationsInput {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 0.85rem;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 54px;
+}
+
+.clarificationsInput:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.clarificationsInput:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.saveButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.saveButton:hover:not(:disabled) {
+    background: #5568d3;
+    transform: scale(1.05);
+}
+
+.saveButton:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: scale(1);
+}
+
+.ingredientsButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.ingredientsButton:hover:not(:disabled) {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.ingredientsButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: scale(1);
+}
+
+.buttonSpinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

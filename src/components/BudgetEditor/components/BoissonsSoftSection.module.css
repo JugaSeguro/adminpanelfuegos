@@ -1,0 +1,142 @@
+.section {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.editable {
+    border-left: 4px solid #e2943a;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.title {
+    margin: 0;
+    color: #e2943a;
+    font-size: 18px;
+}
+
+.toggleBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: #e2943a;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.deleteSectionBtn {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.deleteSectionBtn:hover {
+    background-color: #dc2626;
+    transform: scale(1.1);
+}
+
+.editGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.editField {
+    display: flex;
+    flex-direction: column;
+}
+
+.editField label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.editField input {
+    padding: 8px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.editField input:focus {
+    outline: none;
+    border-color: #e2943a;
+}
+
+.editField input:hover {
+    border-color: #d18634;
+}
+
+.infoDisplay {
+    margin-top: 10px;
+    padding: 12px;
+    background-color: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.infoNote {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 12px;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.totalsBox {
+    background-color: #f9fafb;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 12px;
+}
+
+.totalRow {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.totalRow:last-child {
+    border-bottom: none;
+}
+
+.highlight {
+    background-color: #fef3c7;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+    font-size: 18px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .editGrid {
+        grid-template-columns: 1fr;
+    }
+}

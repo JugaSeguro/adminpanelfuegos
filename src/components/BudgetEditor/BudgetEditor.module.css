@@ -1,0 +1,146 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 15px;
+    font-size: 14px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #e2943a;
+}
+
+.header h1 {
+    margin: 0;
+    color: #333;
+}
+
+.statusContainer {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.statusBadge {
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.statusDraft {
+    background-color: #fbbf24;
+    color: #78350f;
+}
+
+.statusPendingReview {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.statusApproved {
+    background-color: #10b981;
+    color: white;
+}
+
+.statusSent {
+    background-color: #6b7280;
+    color: white;
+}
+
+.statusRejected {
+    background-color: #ef4444;
+    color: white;
+}
+
+.versionBadge {
+    padding: 6px 12px;
+    background-color: #f3f4f6;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.deleteBudgetBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: 10px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ef4444;
+    border-radius: 4px;
+}
+
+.deleteBudgetBtn:hover {
+    background-color: #fee2e2;
+}
+
+.loading,
+.error {
+    text-align: center;
+    padding: 40px;
+    font-size: 18px;
+    color: #6b7280;
+}
+
+.error {
+    color: #ef4444;
+}
+
+.section {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.editable {
+    border-left: 4px solid #e2943a;
+}
+
+.addSectionContainer {
+    padding: 10px;
+    text-align: center;
+    color: #6b7280;
+}
+
+.addSectionBtn {
+    background-color: #e2943a;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+}
+
+.addSectionBtn:hover {
+    background-color: #d18634;
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+}

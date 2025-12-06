@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server'
 import { sendEmail, processEmailTemplate } from '@/lib/emailService'
-import { supabase } from '@/lib/supabaseClient'
+import { createClient } from '@/utils/supabase/server'
 
 export async function POST(request: Request) {
   try {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
+      return NextResponse.json(
+        { error: 'No autorizado. Por favor inicie sesión.' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { orderId, templateId, customSubject, customContent } = body
 
@@ -15,7 +25,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Obtener información del pedido
+    // Obtener información del pedido (Usando el cliente autenticado)
     const { data: order, error: orderError } = await supabase
       .from('catering_orders')
       .select('*')
@@ -99,9 +109,9 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Error en API send-email:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Error al enviar email',
         details: error instanceof Error ? error.message : 'Error desconocido'
       },

@@ -9,44 +9,12 @@ export const useOrderFilters = (orders: CateringOrder[]) => {
         dateTo: ''
     })
 
-    // Filtrar pedidos basado en los filtros aplicados
-    const filteredOrders = useMemo(() => {
-        return orders.filter(order => {
-            // Filtro de búsqueda
-            if (filters.searchTerm) {
-                const searchTerm = filters.searchTerm.toLowerCase()
-                const matchesSearch =
-                    order.contact.name.toLowerCase().includes(searchTerm) ||
-                    order.contact.email.toLowerCase().includes(searchTerm)
-                if (!matchesSearch) return false
-            }
-
-            // Filtro de estado
-            if (filters.status !== 'all' && order.status !== filters.status) {
-                return false
-            }
-
-            // Filtro de fecha de inicio
-            if (filters.dateFrom) {
-                const orderDate = new Date(order.contact.eventDate)
-                const startDate = new Date(filters.dateFrom)
-                if (orderDate < startDate) return false
-            }
-
-            // Filtro de fecha de fin
-            if (filters.dateTo) {
-                const orderDate = new Date(order.contact.eventDate)
-                const endDate = new Date(filters.dateTo)
-                if (orderDate > endDate) return false
-            }
-
-            return true
-        })
-    }, [orders, filters])
+    // Ya no filtramos en el cliente, los filtros se pasan a la query
+    // const filteredOrders = useMemo(() => { ... })
 
     return {
         filters,
         setFilters,
-        filteredOrders
+        // filteredOrders // Ya no se devuelve
     }
 }

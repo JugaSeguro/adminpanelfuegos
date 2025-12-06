@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import ReactQueryProvider from '@/providers/ReactQueryProvider'
+import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
   title: 'Fuegos d\'Azur - Panel de Administración',
@@ -14,7 +16,10 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        {children}
+        <ReactQueryProvider>
+          {children}
+          <Toaster />
+        </ReactQueryProvider>
       </body>
     </html>
   )

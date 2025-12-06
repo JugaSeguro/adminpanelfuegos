@@ -1,118 +1,82 @@
-import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabaseClient'
 import { CateringOrder, PaymentInfo } from '@/types'
+import { fetchOrders, OrdersFilters } from '@/services/ordersService'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
-export const useOrders = () => {
-    const [orders, setOrders] = useState<CateringOrder[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+export const useOrders = (initialFilters?: OrdersFilters) => {
+    const queryClient = useQueryClient()
+    const [page, setPage] = useState(1)
+    const [pageSize] = useState(50)
+    const [filters, setFilters] = useState<OrdersFilters>(initialFilters || {})
 
-    useEffect(() => {
-        const loadOrders = async () => {
-            try {
-                setLoading(true)
-                const { data, error } = await supabase
-                    .from('catering_orders')
-                    .select('*')
-                    .order('created_at', { ascending: false })
+    const {
+        data: ordersData,
+        isLoading: loading,
+        error
+    } = useQuery({
+        queryKey: ['orders', page, pageSize, filters],
+        queryFn: () => fetchOrders({ page, pageSize, filters }),
+        placeholderData: (previousData) => previousData
+    })
 
-                if (error) {
-                    throw error
-                }
+    // Reset page to 1 whenever filters change
+    // Note: This logic might cause a double render or need a better place, 
+    // but typically we want to go back to page 1 if we search/filter.
+    // However, since `page` is in dependency array of useQuery, we need to be careful.
+    // A better pattern is to handle setPage(1) in the UI when filters change.
 
-                const mapped: CateringOrder[] = (data || []).map((row: any) => {
-                    return {
-                        id: row.id,
-                        contact: {
-                            email: row.email,
-                            name: row.name,
-                            phone: row.phone || '',
-                            eventDate: row.event_date || '',
-                            eventType: row.event_type || '',
-                            eventTime: row.event_time || undefined,
-                            address: row.address || '',
-                            guestCount: row.guest_count || 0
-                        },
-                        menu: { type: row.menu_type },
-                        entrees: row.entrees || [],
-                        viandes: row.viandes || [],
-                        dessert: row.dessert || null,
-                        extras: row.extras || { wines: false, equipment: [], decoration: false, specialRequest: '' },
-                        status: row.status || 'pending',
-                        createdAt: row.created_at,
-                        updatedAt: row.updated_at,
-                        estimatedPrice: row.estimated_price || undefined,
-                        notes: row.notes || undefined,
-                        payment: row.payment // Preserving payment info if present on row
-                    }
-                })
 
-                setOrders(mapped)
-            } catch (err: any) {
-                console.error('Error cargando pedidos:', err)
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
-        }
+    const orders = ordersData?.data || []
+    const totalCount = ordersData?.count || 0
 
-        loadOrders()
-    }, [])
-
-    const handleStatusChange = async (orderId: string, newStatus: CateringOrder['status']) => {
-        try {
-            console.log('🔄 Cambiando estado del pedido:', { orderId, newStatus })
-
+    // Mutation for status update
+    const updateStatusMutation = useMutation({
+        mutationFn: async ({ orderId, newStatus }: { orderId: string, newStatus: CateringOrder['status'] }) => {
             const { data, error } = await supabase
                 .from('catering_orders')
-                .update({
-                    status: newStatus,
-                    updated_at: new Date().toISOString()
-                })
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
                 .eq('id', orderId)
                 .select()
+                .single()
 
             if (error) throw error
-
-            console.log('✅ Estado actualizado en BD:', data)
-
-            setOrders(prevOrders =>
-                prevOrders.map(order =>
-                    order.id === orderId
-                        ? { ...order, status: newStatus, updatedAt: new Date().toISOString() }
-                        : order
-                )
-            )
-        } catch (error: any) {
-            console.error('❌ Error al actualizar estado del pedido:', error)
-            alert(`Error al actualizar el estado del pedido: ${error.message || 'Error desconocido'}`)
+            return data
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] })
+            toast.success('Estado actualizado correctamente')
+        },
+        onError: (err: any) => {
+            console.error('❌ Error al actualizar estado:', err)
+            toast.error(`Error al actualizar: ${err.message}`)
         }
+    })
+
+    const handleStatusChange = async (orderId: string, newStatus: CateringOrder['status']) => {
+        updateStatusMutation.mutate({ orderId, newStatus })
     }
 
     const handleUpdatePayment = (orderId: string, updatedPayment: PaymentInfo) => {
-        setOrders(prevOrders =>
-            prevOrders.map(order =>
-                order.id === orderId
-                    ? { ...order, payment: updatedPayment, updatedAt: new Date().toISOString() }
-                    : order
-            )
-        )
+        // Optimistic update or just invalidate for now
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
     }
 
     const handleUpdateOrder = (orderId: string, updates: Partial<CateringOrder>) => {
-        setOrders(prevOrders =>
-            prevOrders.map(order =>
-                order.id === orderId
-                    ? { ...order, ...updates, updatedAt: new Date().toISOString() }
-                    : order
-            )
-        )
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
     }
 
     return {
         orders,
+        totalCount,
         loading,
         error,
+        page,
+        setPage,
+        pageSize,
+        filters,
+        setFilters,
         handleStatusChange,
         handleUpdatePayment,
         handleUpdateOrder

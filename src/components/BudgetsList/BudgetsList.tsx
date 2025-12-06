@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import React, { useState } from 'react'
 import { FileText, Eye, Clock, CheckCircle, Send, XCircle, Trash2 } from 'lucide-react'
 import './BudgetsList.css'
+import { useBudgets } from '@/hooks/useBudgets'
+import { toast } from 'sonner'
 
 interface Budget {
   id: string
@@ -19,34 +20,8 @@ interface BudgetsListProps {
 }
 
 export default function BudgetsList({ onSelectBudget }: BudgetsListProps) {
-  const [budgets, setBudgets] = useState<Budget[]>([])
-  const [loading, setLoading] = useState(true)
+  const { budgets, loading, deleteBudget, createManualBudget } = useBudgets()
   const [filter, setFilter] = useState<'all' | 'pending_review' | 'approved' | 'sent'>('all')
-
-  useEffect(() => {
-    loadBudgets()
-  }, [])
-
-  const loadBudgets = async () => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error cargando presupuestos:', error)
-        return
-      }
-
-      setBudgets(data as any || [])
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -82,32 +57,50 @@ export default function BudgetsList({ onSelectBudget }: BudgetsListProps) {
     }
   }
 
-  const filteredBudgets = budgets.filter(budget => {
+  const filteredBudgets = budgets.filter((budget: any) => {
     if (filter === 'all') return true
     return budget.status === filter
   })
 
   const handleDeleteBudget = async (e: React.MouseEvent, budgetId: string) => {
-    e.stopPropagation() // Evitar que se abra el editor
-    
+    e.stopPropagation()
+
     if (!window.confirm('⚠️ ¿Estás seguro de eliminar este presupuesto PERMANENTEMENTE?')) {
       return
     }
 
     try {
-      const { error } = await supabase
-        .from('budgets')
-        .delete()
-        .eq('id', budgetId)
-
-      if (error) throw error
-
-      // Actualizar lista local
-      setBudgets(prev => prev.filter(b => b.id !== budgetId))
-      
+      await deleteBudget(budgetId)
+      toast.success('Presupuesto eliminado correctamente')
     } catch (error) {
       console.error('Error eliminando:', error)
-      alert('❌ Error al eliminar el presupuesto')
+      toast.error('Error al eliminar el presupuesto')
+    }
+  }
+
+  const handleCreateManual = async () => {
+    try {
+      const newBudget = await createManualBudget({
+        status: 'draft',
+        budget_data: {
+          clientInfo: {
+            name: '', email: '', phone: '', eventType: '', eventDate: '', guestCount: 0, address: '', menuType: 'dejeuner'
+          },
+          menu: { pricePerPerson: 0, totalPersons: 0, totalHT: 0, tvaPct: 10, tva: 0, totalTTC: 0 },
+          service: null,
+          material: { items: [], insurancePct: 6, insuranceAmount: 0, tvaPct: 20, totalHT: 0, tva: 0, totalTTC: 0 },
+          deliveryReprise: { deliveryCost: 0, pickupCost: 0, tvaPct: 20, totalHT: 0, tva: 0, totalTTC: 0 },
+          boissonsSoft: { pricePerPerson: 0, totalPersons: 0, totalHT: 0, tva: 0, tvaPct: 20, totalTTC: 0 },
+          deplacement: null,
+          totals: { totalHT: 0, totalTVA: 0, totalTTC: 0, discount: { percentage: 0, amount: 0, reason: '' } },
+          validUntil: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          generatedBy: 'manual'
+        }
+      })
+      onSelectBudget(newBudget.id)
+      toast.success('Presupuesto creado')
+    } catch (err) {
+      toast.error('Error creando presupuesto')
     }
   }
 
@@ -129,43 +122,14 @@ export default function BudgetsList({ onSelectBudget }: BudgetsListProps) {
             Total: <strong>{budgets.length}</strong>
           </span>
           <span className="stat">
-            Pendientes: <strong>{budgets.filter(b => b.status === 'pending_review').length}</strong>
+            Pendientes: <strong>{budgets.filter((b: any) => b.status === 'pending_review').length}</strong>
           </span>
           <span className="stat">
-            Enviados: <strong>{budgets.filter(b => b.status === 'sent').length}</strong>
+            Enviados: <strong>{budgets.filter((b: any) => b.status === 'sent').length}</strong>
           </span>
           <button
             className="create-manual-btn"
-            onClick={async () => {
-              try {
-                const { data, error } = await supabase
-                  .from('budgets')
-                  .insert({
-                    status: 'draft',
-                    budget_data: {
-                      clientInfo: {
-                        name: '', email: '', phone: '', eventType: '', eventDate: '', guestCount: 0, address: '', menuType: 'dejeuner'
-                      },
-                      menu: { pricePerPerson: 0, totalPersons: 0, totalHT: 0, tvaPct: 10, tva: 0, totalTTC: 0 },
-                      service: null,
-                      material: { items: [], insurancePct: 6, insuranceAmount: 0, tvaPct: 20, totalHT: 0, tva: 0, totalTTC: 0 },
-                      deliveryReprise: { deliveryCost: 0, pickupCost: 0, tvaPct: 20, totalHT: 0, tva: 0, totalTTC: 0 },
-                      boissonsSoft: { pricePerPerson: 0, totalPersons: 0, totalHT: 0, tva: 0, tvaPct: 20, totalTTC: 0 },
-                      deplacement: null,
-                      totals: { totalHT: 0, totalTVA: 0, totalTTC: 0, discount: { percentage: 0, amount: 0, reason: '' } },
-                      validUntil: new Date(Date.now() + 14*24*60*60*1000).toISOString(),
-                      generatedBy: 'manual'
-                    }
-                  })
-                  .select()
-                  .single()
-
-                if (error || !data) throw error || new Error('No se pudo crear presupuesto manual')
-                onSelectBudget(data.id)
-              } catch (err) {
-                alert('Error creando presupuesto manual')
-              }
-            }}
+            onClick={handleCreateManual}
           >
             ➕ Crear Presupuesto Manual
           </button>
@@ -210,7 +174,7 @@ export default function BudgetsList({ onSelectBudget }: BudgetsListProps) {
           {filteredBudgets.map((budget) => {
             const clientInfo = budget.budget_data?.clientInfo || {}
             const totals = budget.budget_data?.totals || {}
-            
+
             return (
               <div key={budget.id} className="budget-card">
                 <div className="budget-card-header">
@@ -220,7 +184,7 @@ export default function BudgetsList({ onSelectBudget }: BudgetsListProps) {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span className="budget-version">v{budget.version}</span>
-                    <button 
+                    <button
                       className="btn-delete-card"
                       onClick={(e) => handleDeleteBudget(e, budget.id)}
                       title="Eliminar presupuesto"
@@ -235,7 +199,7 @@ export default function BudgetsList({ onSelectBudget }: BudgetsListProps) {
                     {clientInfo.name || 'Cliente'}
                   </h3>
                   <p className="budget-client-email">{clientInfo.email}</p>
-                  
+
                   <div className="budget-details">
                     <div className="budget-detail">
                       <span className="label">Evento:</span>

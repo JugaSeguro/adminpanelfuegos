@@ -1,0 +1,689 @@
+.eventCard {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.eventCard:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.eventHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: pointer;
+    user-select: none;
+}
+
+.eventTitleSection {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex: 1;
+}
+
+.eventName {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.unsavedBadge {
+    font-size: 0.75rem;
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.savingBadge {
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.6;
+    }
+}
+
+.eventActions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.actionButtons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.guestsInput {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    color: white;
+}
+
+.guestsInput input {
+    width: 60px;
+    padding: 0.25rem 0.5rem;
+    text-align: center;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    background: white;
+}
+
+.eventMeta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 0.25rem;
+}
+
+.expandBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.expandBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.checkboxWrapper {
+    display: flex;
+    align-items: center;
+}
+
+.eventCheckbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.deleteBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.deleteBtn:hover {
+    background: #ef4444;
+}
+
+.eventBody {
+    padding: 2rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.costsToggleSection {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
+.costsToggleBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.costsToggleBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.costsAnalysis {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+}
+
+.costsHeader {
+    margin-bottom: 1.5rem;
+}
+
+.costsTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    margin: 0 0 1rem 0;
+}
+
+.costsSummary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.costCard {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.costLabel {
+    font-size: 0.875rem;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.costValue {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #d97706;
+}
+
+.costsBreakdown {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.breakdownTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 1rem 0;
+}
+
+.costsTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.costsTable thead {
+    background: #f9fafb;
+}
+
+.costsTable th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.costsTable td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.9rem;
+}
+
+.costAmount {
+    font-weight: 700;
+    color: #d97706;
+    font-size: 1.1rem;
+}
+
+.ingredientsList {
+    margin-bottom: 1.5rem;
+}
+
+.noIngredients {
+    text-align: center;
+    padding: 2rem;
+    color: #999;
+    font-style: italic;
+}
+
+.ingredientsTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ingredientsTable thead {
+    background: #f9fafb;
+}
+
+.ingredientsTable th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ingredientsTable td {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.ingredientName {
+    font-weight: 600;
+    color: #333;
+}
+
+.quantityInput {
+    width: 80px;
+    padding: 0.5rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 1rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+.quantityInput:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.unit {
+    margin-left: 0.5rem;
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.total {
+    font-weight: 700;
+    color: #667eea;
+    font-size: 1.1rem;
+}
+
+.removeBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background: #fee2e2;
+    border: none;
+    border-radius: 6px;
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.removeBtn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.addIngredientSection {
+    padding-top: 1.5rem;
+    border-top: 2px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.productSelect {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    background: white;
+}
+
+.productSelect:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.fixedQuantityBadge {
+    margin-left: 8px;
+    font-size: 0.75rem;
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #475569;
+    font-weight: 600;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.warningBox {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #b91c1c;
+    margin-bottom: 1rem;
+}
+
+.warningBox p {
+    margin: 0;
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.repairBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.repairBtn:hover:not(:disabled) {
+    background-color: #dc2626;
+}
+
+.repairBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.toolsBar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.actionBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    color: #4b5563;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.actionBtn:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    border-color: #d1d5db;
+}
+
+.notesSection {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.noteBox {
+    background-color: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.noteBox h5 {
+    margin: 0 0 0.5rem 0;
+    color: #92400e;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.noteBox p {
+    margin: 0;
+    color: #b45309;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.notesList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.noteItem {
+    background: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.noteHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.priorityBadge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.priorityBadge.high {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.priorityBadge.medium {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.priorityBadge.low {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.categoryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.categoryCard {
+    background: #f8fafc;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.catName {
+    font-size: 0.85rem;
+    color: #64748b;
+    text-align: center;
+}
+
+.catAmount {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 1rem;
+}
+
+.costsPanel {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.iconActionBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.iconActionBtn:hover:not(:disabled) {
+    background: #f8fafc;
+    color: #3b82f6;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.portionInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.portionLabel {
+    background: #f1f5f9;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.clarificationHint {
+    font-style: italic;
+    color: #94a3b8;
+}
+
+.ingredientNote {
+    display: block;
+    font-size: 0.8rem;
+    color: #d97706;
+    /* Amber-600 */
+    margin-top: 2px;
+}
+
+.useDefaultBtn {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    color: #3b82f6;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.useDefaultBtn:hover {
+    color: #2563eb;
+}
+
+.addMaterialsBtn {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #475569;
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.addMaterialsBtn:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}

@@ -1,0 +1,48 @@
+.warningBox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.icon {
+    flex-shrink: 0;
+    color: #f59e0b;
+}
+
+.warningBox p {
+    flex: 1;
+    margin: 0;
+    color: #92400e;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.repairBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background-color: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.repairBtn:hover:not(:disabled) {
+    background-color: #d97706;
+}
+
+.repairBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

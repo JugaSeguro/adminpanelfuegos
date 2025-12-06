@@ -1,0 +1,126 @@
+.ingredientName {
+    font-weight: 500;
+    color: #1e293b;
+    padding: 12px 16px;
+}
+
+.ingredientName strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.fixedQuantityBadge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.portionInfo {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.portionLabel {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.clarificationHint {
+    display: block;
+    color: #3b82f6;
+    font-style: italic;
+    cursor: help;
+}
+
+.ingredientNote {
+    display: block;
+    margin-top: 4px;
+    color: #f59e0b;
+    font-size: 12px;
+    cursor: help;
+}
+
+/* Input de cantidad */
+.quantityContainer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+}
+
+.quantityInput {
+    width: 80px;
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: right;
+    transition: border-color 0.2s;
+}
+
+.quantityInput:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.unit {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+    min-width: 40px;
+}
+
+.useDefaultBtn {
+    padding: 4px 10px;
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.useDefaultBtn:hover {
+    background-color: #e2e8f0;
+    border-color: #94a3b8;
+}
+
+/* Total */
+.total {
+    font-weight: 600;
+    color: #0f172a;
+    padding: 12px 16px;
+    text-align: right;
+}
+
+/* Botón eliminar */
+.removeBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: transparent;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.removeBtn:hover {
+    background-color: #fee2e2;
+    border-color: #fecaca;
+    color: #dc2626;
+}

@@ -1,0 +1,99 @@
+.summaryCard {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+}
+
+.summaryHeader {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.summaryHeader:hover {
+    transform: translateX(4px);
+}
+
+.summaryTitleWrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.summaryTitle {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+}
+
+.summaryByCategory {
+    margin-top: 20px;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.categoryGroup {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.categoryTitle {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #667eea;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.ingredientsTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ingredientsTable thead th {
+    text-align: left;
+    padding: 0.75rem;
+    background: #f9fafb;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ingredientsTable tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.2s ease;
+}
+
+.ingredientsTable tbody tr:hover {
+    background: #f9fafb;
+}
+
+.ingredientsTable tbody tr:last-child {
+    border-bottom: none;
+}
+
+.ingredientsTable tbody td {
+    padding: 0.75rem;
+}
+
+.ingredientName {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.grandTotal {
+    font-weight: 700;
+    color: #667eea;
+    text-align: right;
+    font-size: 1rem;
+}

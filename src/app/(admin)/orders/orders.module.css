@@ -1,0 +1,139 @@
+.ordersGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+.noResults {
+    text-align: center;
+    padding: 60px 24px;
+    color: #6b7280;
+}
+
+.noResultsIcon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.noResultsTitle {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #374151;
+}
+
+.noResultsText {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.bulkActions {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    border-radius: 8px;
+}
+
+.bulkActionsText {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.bulkButton {
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bulkButton:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.bulkButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.selectAll {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #6b7280;
+    cursor: pointer;
+    user-select: none;
+}
+
+.selectAll input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+}
+
+@media (max-width: 768px) {
+    .ordersGrid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .bulkActions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .bulkButton {
+        justify-content: center;
+    }
+}
+
+/* Pagination Styles */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 32px;
+    padding: 16px;
+}
+
+.pageButton {
+    padding: 8px 16px;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+}
+
+.pageButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pageButton:not(:disabled):hover {
+    background: #f3f4f6;
+}
+
+.pageInfo {
+    color: #6b7280;
+    font-size: 14px;
+}

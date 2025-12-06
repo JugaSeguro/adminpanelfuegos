@@ -1,5 +1,6 @@
 import { Product, EventCalculationStats, EventCalculationVersion } from '@/types'
 
+// Re-export specific types if needed by consumers of this module
 export type { EventCalculationVersion }
 
 export interface EventIngredient {

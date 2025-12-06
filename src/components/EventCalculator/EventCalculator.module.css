@@ -2,20 +2,20 @@
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: var(--spacing-xl);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 2rem;
-  gap: 2rem;
+  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-xl);
 }
 
 .headerActions {
   display: flex;
-  gap: 1rem;
+  gap: var(--spacing-md);
   align-items: center;
 }
 
@@ -29,12 +29,12 @@
   gap: 0.75rem;
   font-size: 2rem;
   font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 0.5rem 0;
+  color: var(--color-text-main);
+  margin: 0 0 var(--spacing-sm) 0;
 }
 
 .subtitle {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 1rem;
   margin: 0;
 }
@@ -42,12 +42,12 @@
 .selectOrderBtn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  gap: var(--spacing-sm);
+  padding: 0.875rem var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -63,12 +63,12 @@
 .addEventBtn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  gap: var(--spacing-sm);
+  padding: 0.875rem var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -84,12 +84,12 @@
 .regenerateCostsBtn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  gap: var(--spacing-sm);
+  padding: 0.875rem var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-dark) 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -124,12 +124,12 @@
 .generatePdfBtn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  gap: var(--spacing-sm);
+  padding: 0.875rem var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-dark) 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -151,43 +151,43 @@
   text-align: center;
   padding: 3rem;
   background: white;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 .emptyIcon {
   color: #999;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .emptyTitle {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #333;
-  margin: 0 0 0.5rem 0;
+  color: var(--color-text-main);
+  margin: 0 0 var(--spacing-sm) 0;
 }
 
 .emptyText {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 1rem;
   max-width: 500px;
-  margin: 0 0 2rem 0;
+  margin: 0 0 var(--spacing-xl) 0;
 }
 
 .emptyActions {
   display: flex;
-  gap: 1rem;
+  gap: var(--spacing-md);
   justify-content: center;
 }
 
 .emptyActionBtn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
+  gap: var(--spacing-sm);
+  padding: 0.875rem var(--spacing-lg);
   background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
-  border-radius: 8px;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -195,7 +195,7 @@
 }
 
 .emptyActionBtn:hover {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
   transform: translateY(-2px);
 }
@@ -203,15 +203,15 @@
 .eventsContainer {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
 }
 
 /* ==================== Timeline View ==================== */
 .timelineView {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-small);
 }
 
 .viewTitle {
@@ -220,25 +220,25 @@
   gap: 0.75rem;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 1.5rem 0;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #f1f5f9;
+  color: var(--color-text-main);
+  margin: 0 0 var(--spacing-lg) 0;
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--color-bg-app);
 }
 
 .timelineContainer {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
 }
 
 .timelineItem {
   display: flex;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 8px;
-  border-left: 4px solid #667eea;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-app);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-primary);
   transition: all 0.2s ease;
 }
 
@@ -251,7 +251,7 @@
   flex-shrink: 0;
   width: 140px;
   font-weight: 600;
-  color: #667eea;
+  color: var(--color-primary);
   font-size: 0.95rem;
 }
 
@@ -262,15 +262,15 @@
 .timelineContent h4 {
   margin: 0 0 0.75rem 0;
   font-size: 1.1rem;
-  color: #1a1a1a;
+  color: var(--color-text-main);
 }
 
 .timelineDetails {
   display: flex;
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
   flex-wrap: wrap;
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .timelineDetails span {
@@ -282,42 +282,42 @@
 /* ==================== Comparison View ==================== */
 .comparisonView {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .comparisonControls {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 8px;
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-app);
+  border-radius: var(--radius-md);
 }
 
 .comparisonControls p {
-  margin: 0 0 1rem 0;
+  margin: 0 0 var(--spacing-md) 0;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-secondary);
 }
 
 .comparisonCheckboxes {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .comparisonCheckbox {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
   background: white;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
-  color: #334155;
+  color: var(--color-text-main);
 }
 
 .comparisonCheckbox:hover {
@@ -331,8 +331,8 @@
 
 .comparisonTable {
   overflow-x: auto;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
 }
 
 .comparisonTable table {
@@ -342,26 +342,26 @@
 }
 
 .comparisonTable thead {
-  background: #f1f5f9;
+  background: var(--color-bg-app);
 }
 
 .comparisonTable th {
-  padding: 1rem 1.5rem;
+  padding: var(--spacing-md) var(--spacing-lg);
   text-align: left;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--color-border);
 }
 
 .comparisonTable td {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-bg-app);
+  color: var(--color-text-main);
 }
 
 .comparisonTable tbody tr:hover {
-  background: #f8fafc;
+  background: var(--color-bg-app);
 }
 
 .comparisonTable tbody tr:last-child td {
@@ -371,21 +371,21 @@
 /* ==================== Stats View ==================== */
 .statsView {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
 }
 
 .statCard {
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  border-radius: var(--radius-lg);
   color: white;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   transition: transform 0.2s ease;
@@ -409,17 +409,17 @@
 
 /* Variaciones de color para las tarjetas de estadísticas */
 .statCard:nth-child(2) {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .statCard:nth-child(3) {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-dark) 100%);
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 .statCard:nth-child(4) {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-dark) 100%);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 

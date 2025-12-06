@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { CateringOrder, EmailTemplate } from '@/types'
 import { format, differenceInDays } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -19,7 +19,7 @@ interface OrderCardProps {
   onUpdateOrder?: (orderId: string, updates: Partial<CateringOrder>) => void
 }
 
-export default function OrderCard({
+const OrderCard = ({
   order,
   isSelected,
   onStatusChange,
@@ -27,7 +27,7 @@ export default function OrderCard({
   onViewDetails,
   onSelectionChange,
   onUpdateOrder
-}: OrderCardProps) {
+}: OrderCardProps) => {
   const [mounted, setMounted] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [relanceModalOpen, setRelanceModalOpen] = useState(false)
@@ -41,7 +41,7 @@ export default function OrderCard({
   useEffect(() => {
     if (isExpanded) {
       const fetchLastRelance = async () => {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('email_logs')
           .select('sent_at')
           .eq('order_id', order.id)
@@ -57,7 +57,7 @@ export default function OrderCard({
     }
   }, [isExpanded, order.id])
 
-  
+
 
   const handleRelanceClick = () => {
     setRelanceModalOpen(true)
@@ -352,3 +352,5 @@ export default function OrderCard({
     </div>
   )
 }
+
+export default memo(OrderCard)

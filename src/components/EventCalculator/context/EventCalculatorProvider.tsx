@@ -1,11 +1,12 @@
 import { ReactNode, useState, useEffect, useMemo } from 'react'
 import { Product, CateringOrder } from '@/types'
 import { supabase } from '@/lib/supabaseClient'
-import EventCalculatorContext from './EventCalculatorContext'
+import { EventStateContext, EventDispatchContext, EventStateContextType, EventDispatchContextType } from './EventCalculatorContext'
 import { useEvents } from '../hooks/useEvents'
 import { useEventCalculations } from '../hooks/useEventCalculations'
 import { useEventHandlers } from '../hooks/useEventHandlers'
 import { useEventModals } from '../hooks/useEventModals'
+import { useConfirmation } from '@/hooks/useConfirmation'
 
 interface EventCalculatorProviderProps {
     children: ReactNode
@@ -14,6 +15,9 @@ interface EventCalculatorProviderProps {
 }
 
 export const EventCalculatorProvider = ({ children, products, orders }: EventCalculatorProviderProps) => {
+    // Confirmation System
+    const { confirm, alert, ConfirmationDialog } = useConfirmation()
+
     // Combo ingredients map
     const [comboIngredientsMap, setComboIngredientsMap] = useState<{ [comboId: string]: { combo_id: string, ingredient_id: string, quantity: number }[] }>({})
 
@@ -155,7 +159,9 @@ export const EventCalculatorProvider = ({ children, products, orders }: EventCal
         setShowSelectOrderModal,
         setShowNotesModal,
         setShowHistoryModal,
-        setShowMaterialSelectorModal
+        setShowMaterialSelectorModal,
+        confirm, // Inject confirm
+        alert // Inject alert
     })
 
     // Calculations hook
@@ -169,13 +175,21 @@ export const EventCalculatorProvider = ({ children, products, orders }: EventCal
     // Regenerate all costs function
     const regenerateAllCosts = async () => {
         if (events.length === 0) {
-            alert('No hay eventos para regenerar costos')
+            await alert({
+                title: 'No hay eventos',
+                message: 'No hay eventos para regenerar costos',
+                variant: 'warning'
+            })
             return
         }
 
-        if (!confirm(`¿Regenerar costos de ${events.length} evento(s)? Esto actualizará todos los costos en la base de datos.`)) {
-            return
-        }
+        const confirmed = await confirm({
+            title: 'Regenerar Costos',
+            message: `¿Regenerar costos de ${events.length} evento(s)?\n\nEsto actualizará todos los costos en la base de datos basándose en los precios actuales de los productos.`,
+            variant: 'warning'
+        })
+
+        if (!confirmed) return
 
         try {
             setRegeneratingCosts(true)
@@ -210,50 +224,81 @@ export const EventCalculatorProvider = ({ children, products, orders }: EventCal
         }
     }
 
-    const contextValue = useMemo(() => ({
-        // Events state
+    // Split Context Values
+    const stateValue: EventStateContextType = useMemo(() => ({
         events,
-        setEvents,
         loading,
         saving,
         error,
-        setError,
         eventVersions,
         eventNotes,
+
+        filteredEvents,
+        searchTerm,
+        dateFilter,
+        showSummary,
+        selectedEventIds,
+
+        viewMode,
+        filters,
+        regeneratingCosts,
+        successMessage,
+
+        selectedOrderIds,
+        newEventName,
+        newEventGuests,
+        newEventDate,
+
+        showAddEventModal,
+        showSelectOrderModal,
+        showNotesModal,
+        showHistoryModal,
+        showMaterialSelectorModal,
+        currentEventIdForSelector,
+        selectedMaterialIds,
+
+        grandTotals,
+        totalsByCategory,
+        globalStats,
+
+        availableProducts,
+        allProducts,
+        orders,
+        products,
+        comboIngredientsMap
+    }), [
+        events, loading, saving, error, eventVersions, eventNotes,
+        filteredEvents, searchTerm, dateFilter, showSummary, selectedEventIds,
+        viewMode, filters, regeneratingCosts, successMessage,
+        selectedOrderIds, newEventName, newEventGuests, newEventDate,
+        showAddEventModal, showSelectOrderModal, showNotesModal, showHistoryModal,
+        showMaterialSelectorModal, currentEventIdForSelector, selectedMaterialIds,
+        grandTotals, totalsByCategory, globalStats,
+        availableProducts, allProducts, orders, products, comboIngredientsMap
+    ])
+
+    const dispatchValue: EventDispatchContextType = useMemo(() => ({
+        setEvents,
+        setError,
         loadEvents,
         saveEvent,
         deleteEvent,
 
-        // Filters
-        filteredEvents,
-        searchTerm,
         setSearchTerm,
-        dateFilter,
         setDateFilter,
-        showSummary,
         setShowSummary,
-        selectedEventIds,
         setSelectedEventIds,
         handleSelectEvent,
 
-        // UI State
-        viewMode,
         setViewMode,
-        filters,
         setFilters,
-        regeneratingCosts,
-        successMessage,
         regenerateAllCosts,
 
-        // Handlers
-        selectedOrderIds,
         setSelectedOrderIds,
-        newEventName,
         setNewEventName,
-        newEventGuests,
         setNewEventGuests,
-        newEventDate,
         setNewEventDate,
+
         repairEvent,
         handleLoadOrdersAsEvents,
         toggleOrderSelection,
@@ -269,19 +314,12 @@ export const EventCalculatorProvider = ({ children, products, orders }: EventCal
         handleUpdateNotes,
         duplicateEvent,
 
-        // Modals
-        showAddEventModal,
         setShowAddEventModal,
-        showSelectOrderModal,
         setShowSelectOrderModal,
-        showNotesModal,
         setShowNotesModal,
-        showHistoryModal,
         setShowHistoryModal,
-        showMaterialSelectorModal,
         setShowMaterialSelectorModal,
-        currentEventIdForSelector,
-        selectedMaterialIds,
+
         loadEventHistory,
         restoreVersion,
         handleOpenMaterialSelector,
@@ -289,32 +327,10 @@ export const EventCalculatorProvider = ({ children, products, orders }: EventCal
         handleAddMaterialsToEvent: handleAddSelectedMaterials,
         handleNotesChange,
         handleObservationsChange,
-        handleSaveNotes,
-
-        // Calculations
-        grandTotals,
-        totalsByCategory,
-        globalStats,
-
-        // Data
-        availableProducts,
-        allProducts,
-        orders,
-        products,
-        comboIngredientsMap
+        handleSaveNotes
     }), [
-        events, loading, saving, error,
-        filteredEvents, searchTerm, dateFilter, showSummary, selectedEventIds,
-        viewMode, filters, regeneratingCosts, successMessage,
-        selectedOrderIds, newEventName, newEventGuests, newEventDate,
-        eventVersions, eventNotes,
-        showAddEventModal, showSelectOrderModal, showNotesModal, showHistoryModal,
-        showMaterialSelectorModal, currentEventIdForSelector, selectedMaterialIds,
-        grandTotals, totalsByCategory, globalStats,
-        availableProducts, allProducts, orders, products, comboIngredientsMap,
-        // Functions are stable from hooks
         setEvents, setError, loadEvents, saveEvent, deleteEvent,
-        setSearchTerm, setDateFilter, setShowSummary, setSelectedEventIds, handleSelectEvent,
+        setSearchTerm, setDateFilter, setShowSummary, setSelectedEventIds, // Setters are stable
         setViewMode, setFilters, regenerateAllCosts,
         setSelectedOrderIds, setNewEventName, setNewEventGuests, setNewEventDate,
         repairEvent, handleLoadOrdersAsEvents, toggleOrderSelection,
@@ -329,8 +345,11 @@ export const EventCalculatorProvider = ({ children, products, orders }: EventCal
     ])
 
     return (
-        <EventCalculatorContext.Provider value={contextValue}>
-            {children}
-        </EventCalculatorContext.Provider>
+        <EventDispatchContext.Provider value={dispatchValue}>
+            <EventStateContext.Provider value={stateValue}>
+                {children}
+                <ConfirmationDialog />
+            </EventStateContext.Provider>
+        </EventDispatchContext.Provider>
     )
 }

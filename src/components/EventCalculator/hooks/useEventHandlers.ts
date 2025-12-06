@@ -21,6 +21,8 @@ interface UseEventHandlersProps {
     setShowNotesModal: (id: string | null) => void
     setShowHistoryModal: (id: string | null) => void
     setShowMaterialSelectorModal: (show: boolean) => void
+    confirm: (options: { title: string; message: string; variant?: 'danger' | 'warning' | 'info' | 'success' }) => Promise<boolean>
+    alert: (options: { title: string; message: string; variant?: 'danger' | 'warning' | 'info' | 'success' }) => Promise<void>
 }
 
 export const useEventHandlers = ({
@@ -38,7 +40,9 @@ export const useEventHandlers = ({
     setShowSelectOrderModal,
     setShowNotesModal,
     setShowHistoryModal,
-    setShowMaterialSelectorModal
+    setShowMaterialSelectorModal,
+    confirm,
+    alert
 }: UseEventHandlersProps) => {
 
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([])
@@ -50,25 +54,29 @@ export const useEventHandlers = ({
     const repairEvent = async (eventId: string) => {
         const event = events.find(e => e.id === eventId)
         if (!event || !event.orderId) {
-            alert('Este evento no tiene un pedido asociado para reparar')
+            await alert({ title: 'Error', message: 'Este evento no tiene un pedido asociado para reparar', variant: 'warning' })
             return
         }
 
         const originalOrder = orders.find(o => o.id === event.orderId)
         if (!originalOrder) {
-            alert('No se encontró el pedido original')
+            await alert({ title: 'Error', message: 'No se encontró el pedido original', variant: 'warning' })
             return
         }
 
-        if (!confirm(`¿Reparar evento "${event.name}"?\n\nEsto agregará los ingredientes faltantes desde el pedido original.`)) {
-            return
-        }
+        const confirmed = await confirm({
+            title: 'Reparar Evento',
+            message: `¿Reparar evento "${event.name}"?\n\nEsto agregará los ingredientes faltantes desde el pedido original.`,
+            variant: 'info'
+        })
+
+        if (!confirmed) return
 
         try {
             const repairedEvent = createEventFromOrder(originalOrder, allProducts)
 
             if (repairedEvent.notes && repairedEvent.notes.includes('Items no encontrados')) {
-                alert(`Advertencia durante la reparación: ${repairedEvent.notes}`)
+                await alert({ title: 'Advertencia', message: `Advertencia durante la reparación: ${repairedEvent.notes}`, variant: 'warning' })
             }
 
             const updatedEvent: Event = {
@@ -115,13 +123,21 @@ export const useEventHandlers = ({
         const ordersToCreate = ordersToLoad.filter(order => !activeOrderIds.has(order.id))
 
         if (ordersToCreate.length === 0) {
-            alert('Los pedidos seleccionados ya tienen eventos activos. Elimina el evento existente primero si quieres recrearlo.')
+            await alert({
+                title: 'Información',
+                message: 'Los pedidos seleccionados ya tienen eventos activos. Elimina el evento existente primero si quieres recrearlo.',
+                variant: 'info'
+            })
             return
         }
 
         if (ordersToCreate.length < ordersToLoad.length) {
             const skipped = ordersToLoad.length - ordersToCreate.length
-            alert(`${skipped} pedido(s) ya tienen eventos activos y fueron omitidos.`)
+            await alert({
+                title: 'Información',
+                message: `${skipped} pedido(s) ya tienen eventos activos y fueron omitidos.`,
+                variant: 'info'
+            })
         }
 
         const newEvents = ordersToCreate.map(order => {
@@ -185,7 +201,13 @@ export const useEventHandlers = ({
     }
 
     const handleRemoveEvent = async (eventId: string) => {
-        if (!confirm('¿Estás seguro de eliminar este evento?')) return
+        const confirmed = await confirm({
+            title: 'Eliminar Evento',
+            message: '¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.',
+            variant: 'danger'
+        })
+
+        if (!confirmed) return
         await deleteEvent(eventId)
     }
 

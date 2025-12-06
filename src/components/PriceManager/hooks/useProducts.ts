@@ -1,42 +1,44 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Product } from '@/types'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { fetchProducts } from '@/hooks/useProducts' // Import shared fetcher
 
 export function useProducts() {
+    // Local state for editing
     const [products, setProducts] = useState<Product[]>([])
-    const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
     const [editedProducts, setEditedProducts] = useState<Set<string>>(new Set())
 
-    const loadProducts = useCallback(async () => {
-        try {
-            setLoading(true)
-            setError(null)
+    const queryClient = useQueryClient()
 
-            const { data, error } = await supabase
-                .from('products')
-                .select('*')
-                .order('category', { ascending: true })
-                .order('name', { ascending: true })
+    // Use React Query for fetching
+    const { data: serverProducts, isLoading: loading, error: queryError } = useQuery({
+        queryKey: ['products'], // Share key with global hook!
+        queryFn: fetchProducts,
+        staleTime: 1000 * 60 * 5
+    })
 
-            if (error) {
-                throw new Error(error.message)
-            }
-
-            setProducts(data || [])
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error desconocido')
-            console.error('Error loading products:', err)
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
+    // Sync server data to local state when loaded (only if not editing)
     useEffect(() => {
-        loadProducts()
-    }, [loadProducts])
+        if (serverProducts && editedProducts.size === 0) {
+            setProducts(serverProducts)
+        }
+    }, [serverProducts, editedProducts.size])
+
+    // Handle query error
+    useEffect(() => {
+        if (queryError) {
+            setError((queryError as Error).message)
+        }
+    }, [queryError])
+
+    // Manual reload wrapper if needed, though invalidation is better
+    const loadProducts = useCallback(async () => {
+        await queryClient.invalidateQueries({ queryKey: ['products'] })
+    }, [queryClient])
 
     const handlePriceChange = useCallback((productId: string, field: 'price_per_kg' | 'price_per_portion', newPrice: string) => {
         const price = parseFloat(newPrice)

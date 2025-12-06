@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle, Info, X } from 'lucide-react'
 // You can customize these styles or move them to a CSS module
 const styles = {
     overlay: {
-        position: 'fixed' as 'fixed',
+        position: 'fixed' as const,
         top: 0,
         left: 0,
         right: 0,

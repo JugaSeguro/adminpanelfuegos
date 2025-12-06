@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { Resend } from 'resend'
 import fs from 'fs'
 import path from 'path'
+import { sendEmail, validateEmailConfig } from '@/lib/emails/service'
+import { BudgetApprovedTemplate } from '@/lib/emails/templates/BudgetApproved'
+import { BaseLayout } from '@/lib/emails/templates/BaseLayout'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
-
-// Inicializar Resend solo si hay API key
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,13 +70,13 @@ export async function POST(request: NextRequest) {
     try {
       // Extraer la ruta del PDF de la URL
       const pdfPath = budget.pdf_url.split('/storage/v1/object/public/budgets/')[1]?.split('?')[0]
-      
+
       if (pdfPath) {
         const { data: pdfData, error: pdfError } = await supabase
           .storage
           .from('budgets')
           .download(pdfPath)
-        
+
         if (!pdfError && pdfData) {
           const arrayBuffer = await pdfData.arrayBuffer()
           pdfBuffer = Buffer.from(arrayBuffer)
@@ -91,14 +90,15 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Verificar configuración de Resend
-    if (!resend || !process.env.RESEND_API_KEY) {
-      console.warn('⚠️ RESEND_API_KEY no configurada. El presupuesto se aprobará pero no se enviará email.')
-      
+    const config = validateEmailConfig()
+    if (!config.valid) {
+      console.warn(`⚠️ ${config.error}. El presupuesto se aprobará pero no se enviará email.`)
+
       return NextResponse.json({
         success: true,
         message: 'Presupuesto aprobado exitosamente',
         pdfUrl: budget.pdf_url,
-        note: 'RESEND_API_KEY no está configurada. El presupuesto fue aprobado pero el email no se pudo enviar automáticamente. Descargue el PDF y envíelo manualmente al cliente.'
+        note: `${config.error}. El presupuesto fue aprobado pero el email no se pudo enviar automáticamente. Descargue el PDF y envíelo manualmente al cliente.`
       })
     }
 
@@ -106,18 +106,13 @@ export async function POST(request: NextRequest) {
     try {
       const budgetData = budget.budget_data as any
       const totalTTC = budgetData?.totals?.totalTTC || 0
-      const eventDate = budgetData?.clientInfo?.eventDate 
+      const eventDate = budgetData?.clientInfo?.eventDate
         ? new Date(budgetData.clientInfo.eventDate).toLocaleDateString('fr-FR')
         : ''
 
-      // Usar dominio de prueba de Resend si no hay dominio verificado
-      // onboarding@resend.dev permite enviar a cualquier destinatario
-      const fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev'
-      const fromName = process.env.EMAIL_FROM_NAME || "Fuegos d'Azur"
-
       // Cargar logo para adjuntar como inline image
       let logoAttachment = null
-      let logoCid = null
+      let logoCid = undefined
       try {
         // Intentar cargar el logo desde src/lib/minilogo.webp
         const logoPath = path.join(process.cwd(), 'src', 'lib', 'minilogo.webp')
@@ -128,7 +123,7 @@ export async function POST(request: NextRequest) {
             filename: 'minilogo.webp',
             content: logoBuffer.toString('base64'),
             content_id: logoCid,
-            disposition: 'inline'
+            disposition: 'inline' as const
           }
           console.log('✅ Logo cargado para embedding')
         } else {
@@ -138,143 +133,80 @@ export async function POST(request: NextRequest) {
         console.warn('⚠️ Error cargando logo:', logoError)
       }
 
-      const emailContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; background-color: #f9fafb;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-            <div style="background-color: white; border-radius: 8px; padding: 40px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-              <h1 style="color: #e2943a; font-size: 24px; margin-bottom: 20px;">Bonjour ${clientName},</h1>
-              
-              <p style="font-size: 16px; margin-bottom: 20px;">Nous avons le plaisir de vous envoyer votre devis personnalisé pour votre événement.</p>
-              
-              ${eventDate ? `<p style="font-size: 16px; margin-bottom: 20px;"><strong>Date de l'événement:</strong> ${eventDate}</p>` : ''}
-              
-              <div style="background-color: #fef3c7; border-left: 4px solid #e2943a; padding: 20px; margin: 30px 0; border-radius: 8px;">
-                <p style="font-size: 16px; font-weight: 600; color: #78350f; margin-bottom: 15px;">Notre offre inclut :</p>
-                <p style="font-size: 16px; color: #78350f; margin-bottom: 10px; font-style: italic;">Une expérience gastronomique au brasero, 100 % sur mesure</p>
-                <p style="font-size: 14px; color: #78350f; margin: 0;">La préparation, Le service, et les options complémentaires demandées</p>
-              </div>
-              
-              <div style="margin: 30px 0;">
-                <p style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 15px;">Pour confirmer votre date, il vous suffit de :</p>
-                <ul style="font-size: 16px; line-height: 2; padding-left: 25px;">
-                  <li style="margin-bottom: 10px;">Nous renvoyer le devis signé</li>
-                  <li style="margin-bottom: 10px;">Verser un acompte de <strong style="color: #e2943a;">30 %</strong></li>
-                </ul>
-              </div>
-              
-              <p style="font-size: 16px; margin: 30px 0;">Notre objectif est de créer une expérience aussi fluide que mémorable, parfaitement adaptée à vos attentes.</p>
-              
-              <p style="font-size: 16px; margin: 30px 0;">Au plaisir de vous accompagner dans l'organisation de votre événement</p>
+      // Preparar contenido HTML usando plantillas
+      const innerContent = BudgetApprovedTemplate({
+        clientName,
+        totalTTC,
+        eventDate,
+        logoCid
+      })
+      const finalHtml = BaseLayout(innerContent)
 
-              <p style="font-size: 16px; margin: 30px 0;">Nous restons à votre disposition pour toute modification ou précision complémentaire.</p>
-              
-              <div style="margin-top: 40px; padding: 30px; background-color: #1f2937; color: white; border-radius: 8px;">
-                <div style="margin-bottom: 20px;">
-                    <p style="font-size: 16px; margin-bottom: 10px; color: white;">Bien chaleureusement,</p>
-                    <p style="font-size: 18px; font-weight: 600; color: #e2943a; margin-bottom: 5px;">Jeronimo Negrotto</p>
-                    <p style="font-size: 18px; font-weight: 600; color: #e2943a; margin-bottom: 15px;">Fuegos d'Azur</p>
-                    <p style="font-size: 14px; color: #9ca3af; font-style: italic; letter-spacing: 1px; margin-bottom: 0;">Authenticité — Élégance — Feu</p>
-                </div>
-                
-                <hr style="border: none; border-top: 1px solid #374151; margin: 20px 0;">
-                
-                <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                        <td valign="middle" width="80" style="padding-right: 15px;">
-                            ${logoCid ? `<img src="cid:${logoCid}" alt="Fuegos d'Azur" width="70" style="display: block;" />` : ''}
-                        </td>
-                        <td valign="middle" style="font-size: 14px; color: #e5e7eb;">
-                            Tel: 07 50 85 35 99 • 06 70 65 97 84<br>
-                            Email: fuegosdazur@proton.me
-                        </td>
-                    </tr>
-                </table>
-              </div>
-            </div>
-          </div>
-        </body>
-        </html>
-      `
+      // Preparar adjuntos
+      const attachments = []
 
-      const emailOptions: any = {
-        from: `${fromName} <${fromEmail}>`,
-        to: ['fuegosdazur@proton.me'], // Enviar solo al email de prueba por ahora
-        subject: `Votre Devis Fuegos d'Azur - ${totalTTC.toFixed(2)}€ (Cliente: ${clientEmail})`,
-        html: emailContent,
-        attachments: []
-      }
-
-      // Agregar PDF como adjunto si está disponible
+      // Agregar PDF
       if (pdfBuffer) {
         const filename = budget.pdf_url.split('/').pop()?.split('?')[0] || 'devis.pdf'
-        // Resend espera el adjunto en base64 o como Buffer
-        emailOptions.attachments.push({
+        attachments.push({
           filename: filename,
           content: pdfBuffer.toString('base64'),
           type: 'application/pdf'
         })
         console.log(`📎 Adjuntando PDF: ${filename} (${pdfBuffer.length} bytes)`)
-      } else {
-        console.warn('⚠️ No se pudo descargar el PDF para adjuntarlo')
       }
 
-      // Agregar logo como adjunto inline
+      // Agregar Logo
       if (logoAttachment) {
-        emailOptions.attachments.push(logoAttachment)
-        console.log('📎 Adjuntando logo inline')
+        attachments.push(logoAttachment)
       }
+
+      const subject = `Votre Devis Fuegos d'Azur - ${totalTTC.toFixed(2)}€ (Cliente: ${clientEmail})`
 
       console.log(`📧 Enviando email a ${clientEmail}...`)
-      const { data: emailData, error: emailError } = await resend.emails.send(emailOptions)
 
-      if (emailError) {
-        console.error('❌ Error enviando email:', emailError)
-        
-        // Mensaje más amigable para errores comunes de Resend
-        let errorMessage = emailError.message || JSON.stringify(emailError)
-        
-        if (errorMessage.includes('testing emails') || errorMessage.includes('verify a domain')) {
-          errorMessage = 'Resend está en modo de prueba. Para enviar emails a clientes, necesitas verificar un dominio en resend.com/domains. Por ahora, el presupuesto se aprobó pero el email no se envió. Puedes descargar el PDF y enviarlo manualmente.'
-        }
-        
-        throw new Error(errorMessage)
+      const result = await sendEmail({
+        to: clientEmail, // Usar el email REAL del cliente
+        subject: subject,
+        html: finalHtml,
+        attachments: attachments
+      })
+
+      if (!result.success) {
+        throw new Error(result.error)
       }
 
-      console.log('✅ Email con PDF adjunto enviado al cliente:', emailData?.id)
-      
+      console.log('✅ Email con PDF adjunto enviado al cliente:', result.messageId)
+
       return NextResponse.json({
         success: true,
         message: 'Presupuesto aprobado y enviado exitosamente',
         pdfUrl: budget.pdf_url,
-        emailId: emailData?.id
+        emailId: result.messageId
       })
 
-    } catch (emailError) {
+    } catch (emailError: any) {
       console.error('❌ Error enviando email:', emailError)
-      
+
       // Rollback del estado si falla el envío
-      await supabase
-        .from('budgets')
-        .update({
-          status: 'pending_review',
-          sent_at: null,
-          approved_at: null,
-          approved_by: null
-        })
-        .eq('id', budgetId)
-      
+      // NOTA: Para errores de dominio (modo testing), no hacemos rollback
+      const isDomainError = emailError.message?.includes('testing emails') || emailError.message?.includes('verify a domain')
+
+      if (!isDomainError) {
+        await supabase
+          .from('budgets')
+          .update({
+            status: 'pending_review',
+            sent_at: null,
+            approved_at: null,
+            approved_by: null
+          })
+          .eq('id', budgetId)
+      }
+
       const errorMessage = emailError instanceof Error ? emailError.message : String(emailError)
-      
-      // Si el error es por dominio no verificado, aprobar el presupuesto de todas formas
-      const isDomainError = errorMessage.includes('testing emails') || errorMessage.includes('verify a domain')
-      
+
       if (isDomainError) {
-        // No hacer rollback, dejar el presupuesto aprobado
         return NextResponse.json({
           success: true,
           message: 'Presupuesto aprobado exitosamente',
@@ -283,8 +215,7 @@ export async function POST(request: NextRequest) {
           warning: true
         })
       }
-      
-      // Para otros errores, hacer rollback
+
       return NextResponse.json({
         success: false,
         error: 'Error al enviar el email. El presupuesto no se marcó como enviado.',

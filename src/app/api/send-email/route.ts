@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { sendEmail, processEmailTemplate } from '@/lib/emailService'
+import { sendEmail, processEmailTemplate } from '@/lib/emails/service'
+import { BaseLayout } from '@/lib/emails/templates/BaseLayout'
 import { createClient } from '@/utils/supabase/server'
 
 export async function POST(request: Request) {
@@ -73,14 +74,26 @@ export async function POST(request: Request) {
     const processedSubject = processEmailTemplate(subject, variables)
     const processedContent = processEmailTemplate(content, variables)
 
+    // Aplicar el BaseLayout para que tenga estilos consistentes
+    // Nota: Si el contenido ya trae HTML completo (<html>...), esto podría ser redundante, 
+    // pero idealmente los templates en DB/custom deberían ser fragmentos.
+    // Asumimos fragmentos.
+    const finalHtml = BaseLayout(processedContent)
+
     // Enviar email
     const result = await sendEmail({
       to: order.email,
-      toName: order.name,
       subject: processedSubject,
-      content: processedContent,
-      orderId: orderId
+      html: finalHtml,
+      tags: orderId ? [
+        { name: 'category', value: 'catering' },
+        { name: 'order_id', value: orderId }
+      ] : undefined
     })
+
+    if (!result.success) {
+      throw new Error(result.error)
+    }
 
     // Registrar en email_logs
     const { error: logError } = await supabase
@@ -103,8 +116,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: 'Email enviado correctamente',
-      messageId: result.messageId,
-      recipient: result.recipient
+      messageId: result.messageId
     })
 
   } catch (error) {
